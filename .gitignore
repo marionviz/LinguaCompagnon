@@ -1,0 +1,35 @@
+```
+# Dépendances
+node_modules/
+package-lock.json
+
+# Build
+dist/
+scorm-package/
+*.zip
+
+# Environnement (clés API secrètes)
+.env.local
+.env
+.env.production
+
+# Cache
+.vite/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Système
+.DS_Store
+Thumbs.db
+```
