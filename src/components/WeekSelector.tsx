@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface WeekSelectorProps {
@@ -6,18 +7,20 @@ interface WeekSelectorProps {
 }
 
 const WeekSelector: React.FC<WeekSelectorProps> = ({ currentWeek, onWeekChange }) => {
+  const weeks = Array.from({ length: 11 }, (_, i) => i + 1);
+
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="week-select" className="text-sm font-medium text-slate-300">
+      <label htmlFor="week-select" className="text-sm font-medium text-gray-600">
         Semaine :
       </label>
       <select
         id="week-select"
         value={currentWeek}
         onChange={(e) => onWeekChange(Number(e.target.value))}
-        className="bg-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-600"
+        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-green focus:border-brand-green block w-full p-2"
       >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((week) => (
+        {weeks.map((week) => (
           <option key={week} value={week}>
             Semaine {week}
           </option>

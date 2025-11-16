@@ -67,13 +67,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 p-2 bg-slate-800 border-t border-slate-700">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 p-2 bg-gray-100 border-t border-gray-200">
       <textarea
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Écrivez votre message..."
-        className="flex-grow bg-slate-700 text-slate-100 placeholder-slate-400 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+        className="flex-grow bg-white text-gray-900 placeholder-gray-500 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent resize-none"
         rows={1}
         disabled={isLoading}
       />
@@ -82,8 +82,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
         onClick={toggleListening}
         disabled={isLoading}
         aria-label={isListening ? 'Arrêter la dictée' : 'Commencer la dictée'}
-        className={`flex-shrink-0 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-            isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
+        className={`flex-shrink-0 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50 disabled:cursor-not-allowed ${
+            isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >
         <MicrophoneIcon className="w-6 h-6" />
@@ -91,7 +91,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
       <button
         type="submit"
         disabled={isLoading || !inputValue.trim()}
-        className="bg-indigo-600 text-white p-3 rounded-lg disabled:bg-slate-600 disabled:cursor-not-allowed hover:bg-indigo-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green"
       >
         {isLoading ? (
           <div className="w-6 h-6 border-2 border-t-transparent border-white rounded-full animate-spin"></div>

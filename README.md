@@ -174,9 +174,7 @@ Projet académique - Master IPM Lille 2025
 
 ## 🙏 Remerciements
 
-- Université de Lille - Master IPM
-- Organisation des Nations Unies (Genève)
-- Google Gemini AI
+- Toutes les personnes qui ont rendu ce projet réel
 
 ---
 

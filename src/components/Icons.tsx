@@ -24,30 +24,48 @@ export const UserIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+// --- REPLACED ICONS ---
 export const ThumbsUpIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.5-3.375 1.375-4.875h.188c.338 0 .646.217.75.537l.808 2.271a3.75 3.75 0 01-.578 4.06L8.375 18.75H7.493zM12 18.75h3.188c1.121-1.121 1.959-2.04 2.625-3.375.334-.665.62-1.32.866-1.968.093-.246.063-.527-.082-.738l-.83-1.244a3.75 3.75 0 00-3.434-1.849H12.375c-.366 0-.708.16-1.009.421L7.5 13.125v5.625h4.5z" />
-    <path d="M4.5 6.375c0-1.036.84-1.875 1.875-1.875h.375a1.875 1.875 0 011.875 1.875v11.25a1.875 1.875 0 01-1.875 1.875h-.375A1.875 1.875 0 014.5 17.625V6.375z" />
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M6.633 10.5l-1.822 1.822a1.5 1.5 0 00-2.122 2.122L6.17 17.994A4.5 4.5 0 009.33 19.5h2.476c.39 0 .742-.236.929-.608a4.5 4.5 0 00-.416-5.023l-1.822-1.822a1.5 1.5 0 00-2.122-2.122L6.633 10.5z" />
   </svg>
 );
 
 export const ThumbsDownIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M16.507 5.25c.425 0 .82.236.975.632A7.48 7.48 0 0118 8.625c0 1.75-.5 3.375-1.375 4.875h-.188c-.338 0-.646-.217-.75-.537l-.808-2.271a3.75 3.75 0 01.578-4.06l1.25-1.385h.984zM12 5.25H8.812c-1.121 1.121-1.959 2.04-2.625 3.375-.334.665-.62 1.32-.866 1.968-.093.246-.063.527.082.738l.83 1.244a3.75 3.75 0 003.434 1.849h3.375c.366 0 .708-.16 1.009-.421l3.491-2.625V5.25h-4.5z" />
-    <path d="M19.5 17.625c0 1.036-.84 1.875-1.875 1.875h-.375a1.875 1.875 0 01-1.875-1.875V6.375a1.875 1.875 0 011.875-1.875h.375A1.875 1.875 0 0119.5 6.375v11.25z" />
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7.863 10.5c.806 0 1.533.446 2.031 1.08a9.041 9.041 0 002.861 2.4c.723.384 1.35.956 1.653 1.715a4.498 4.498 0 01.322 1.672V21a.75.75 0 00.75.75A2.25 2.25 0 0016.5 19.5c0-1.152-.26-2.243-.723-3.218-.266-.558.107-1.282.725-1.282h3.126c1.026 0 1.945-.694 2.054-1.715.045-.422.068-.85.068-1.285a11.95 11.95 0 00-2.649-7.521c-.388-.482-.987-.729-1.605-.729H13.48c-.483 0-.964.078-1.423-.23l-3.114 1.04a4.501 4.501 0 01-1.423.23H5.904M7.863 10.5l-1.822-1.822a1.5 1.5 0 01-2.122-2.122L7.41 2.06a4.5 4.5 0 016.364 0l.028.028a4.5 4.5 0 010 6.364l-3.114 3.114a1.5 1.5 0 01-2.122 0l-1.822-1.822z" />
   </svg>
 );
 
 export const SpeakerWaveIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM18.584 14.828a1.5 1.5 0 000-2.12l-1.414-1.414a1.5 1.5 0 10-2.121 2.121l1.414 1.414a1.5 1.5 0 002.121 0zM15.05 11.293L13.636 9.88a1.5 1.5 0 00-2.121 2.121l1.414 1.414a1.5 1.5 0 002.121-2.12z" />
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
   </svg>
 );
 
 export const MicrophoneIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M12 18.75a6 6 0 006-6v-1.5a6 6 0 00-12 0v1.5a6 6 0 006 6z" />
-    <path d="M12 5.25a.75.75 0 01.75.75v6a.75.75 0 01-1.5 0v-6A.75.75 0 0112 5.25z" />
-    <path d="M12 15a3 3 0 00-3 3.75c0 1.096.566 2.065 1.393 2.634.76.518 1.732.866 2.813.978A6.713 6.713 0 0018 20.25a3 3 0 00-6 0c0 .414.079.813.226 1.182.15.373.344.726.574 1.047a.75.75 0 101.29-.752 3.73 3.73 0 01-.52-1.008 3.732 3.732 0 01-.22-1.469 1.5 1.5 0 013 0c0 .41-.073.805-.21 1.168a4.443 4.443 0 01-.526 1.013.75.75 0 101.29.752c.23-.32.424-.674.574-1.047A4.47 4.47 0 0015 20.25a1.5 1.5 0 01-1.5-1.5c0-.62.376-1.156.906-1.397.77-.348 1.597-.53 2.594-.53a.75.75 0 000-1.5c-1.29 0-2.483.255-3.565.733A3.732 3.732 0 0112 15z" />
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5a6 6 0 00-12 0v1.5a6 6 0 006 6z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" />
+  </svg>
+);
+
+// --- NEW ICONS ---
+
+export const SaveIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+  </svg>
+);
+
+export const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M12 12.75l-4.5-4.5m4.5 4.5l4.5-4.5m-4.5 4.5v-9" />
+  </svg>
+);
+
+export const EndIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
   </svg>
 );

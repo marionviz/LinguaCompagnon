@@ -7,6 +7,7 @@ import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import ChatMessageComponent from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
+import { SaveIcon, DownloadIcon, EndIcon } from './components/Icons';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -25,7 +26,6 @@ const App: React.FC = () => {
 
   useEffect(scrollToBottom, [messages]);
   
-  // Stop speech synthesis when component unmounts or week changes
   useEffect(() => {
     return () => {
       if (window.speechSynthesis) {
@@ -34,6 +34,18 @@ const App: React.FC = () => {
     };
   }, [currentWeek]);
 
+  const sendWelcomeMessage = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+        const firstMessage: ChatMessage = {
+            id: `model-${Date.now()}`,
+            role: 'model',
+            text: `Bonjour ! Je suis LinguaCompagnon, votre partenaire conversationnel. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
+        };
+        setMessages([firstMessage]);
+        setIsLoading(false);
+    }, 500);
+  }
 
   useEffect(() => {
     const initializeChat = () => {
@@ -53,17 +65,19 @@ const App: React.FC = () => {
           },
         });
         
-        setMessages([]); 
-        setIsLoading(true);
-        setTimeout(() => {
-            const firstMessage: ChatMessage = {
-                id: `model-${Date.now()}`,
-                role: 'model',
-                text: `Bonjour ! Je suis LinguaCompagnon, votre partenaire conversationnel. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
-            };
-            setMessages([firstMessage]);
+        const savedMessagesRaw = localStorage.getItem(`linguaCompagnon-week-${currentWeek}`);
+        if (savedMessagesRaw) {
+          const savedMessages = JSON.parse(savedMessagesRaw);
+          if (savedMessages.length > 0 && window.confirm('Une conversation sauvegardée a été trouvée pour cette semaine. Voulez-vous la reprendre ?')) {
+            setMessages(savedMessages);
             setIsLoading(false);
-        }, 1000);
+            return;
+          } else {
+            localStorage.removeItem(`linguaCompagnon-week-${currentWeek}`);
+          }
+        }
+        
+        sendWelcomeMessage();
 
       } catch (e) {
         console.error(e);
@@ -75,14 +89,52 @@ const App: React.FC = () => {
   }, [currentWeek]);
   
   const handleWeekChange = (week: number) => {
+    if (messages.length > 0 && !window.confirm('Changer de semaine effacera la conversation en cours (sauf si elle est sauvegardée). Voulez-vous continuer ?')) {
+      return;
+    }
     setCurrentWeek(week);
   };
+  
+  const handleSave = () => {
+    if (messages.length === 0) return;
+    localStorage.setItem(`linguaCompagnon-week-${currentWeek}`, JSON.stringify(messages));
+    alert('Conversation sauvegardée !');
+  };
+
+  const handleDownload = () => {
+    if (messages.length === 0) return;
+    const header = `Conversation - LinguaCompagnon - Semaine ${currentWeek}\n=========================================\n\n`;
+    const formatted = messages.map(msg => {
+      const prefix = msg.role === 'user' ? 'Apprenant' : 'LinguaCompagnon';
+      return `${prefix}:\n${msg.text}\n`;
+    }).join('\n-----------------------------------------\n\n');
+    
+    const content = header + formatted;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linguacompagnon-semaine-${currentWeek}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleEnd = () => {
+    if (messages.length === 0) return;
+    if (window.confirm('Voulez-vous vraiment terminer et effacer cette conversation ? La sauvegarde locale sera aussi supprimée.')) {
+      setMessages([]);
+      localStorage.removeItem(`linguaCompagnon-week-${currentWeek}`);
+      sendWelcomeMessage();
+    }
+  };
+
 
   const handleFeedback = (messageId: string, feedback: Feedback) => {
     setMessages(prevMessages =>
       prevMessages.map(msg => {
         if (msg.id === messageId) {
-          // Toggle feedback: if same button is clicked again, remove feedback
           return { ...msg, feedback: msg.feedback === feedback ? undefined : feedback };
         }
         return msg;
@@ -95,14 +147,12 @@ const App: React.FC = () => {
       setError('Votre navigateur ne supporte pas la synthèse vocale.');
       return;
     }
-    // If this message is already speaking, stop it.
     if (speakingMessageId === messageId) {
       window.speechSynthesis.cancel();
       setSpeakingMessageId(null);
       return;
     }
 
-    // If another message is speaking, stop it before starting a new one.
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -134,8 +184,10 @@ const App: React.FC = () => {
         streamedText += chunk.text;
         setMessages((prevMessages) => {
           const newMessages = [...prevMessages];
-          const lastMessage = newMessages[newMessages.length - 1];
-          newMessages[newMessages.length - 1] = { ...lastMessage, text: streamedText };
+          if (newMessages.length > 0) {
+              const lastMessage = newMessages[newMessages.length - 1];
+              newMessages[newMessages.length - 1] = { ...lastMessage, text: streamedText };
+          }
           return newMessages;
         });
       }
@@ -145,8 +197,10 @@ const App: React.FC = () => {
       const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer. Si le problème persiste, contactez votre enseignante.";
       setMessages((prevMessages) => {
           const newMessages = [...prevMessages];
-          const lastMessage = newMessages[newMessages.length - 1];
-          newMessages[newMessages.length - 1] = { ...lastMessage, text: errorMessage };
+          if (newMessages.length > 0) {
+            const lastMessage = newMessages[newMessages.length - 1];
+            newMessages[newMessages.length - 1] = { ...lastMessage, text: errorMessage };
+          }
           return newMessages;
       });
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');
@@ -156,21 +210,28 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-slate-900 font-sans">
-      <header className="p-4 border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-xl font-bold text-white">
-            Lingua<span className="text-indigo-400">Compagnon</span>
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-xl font-bold text-gray-800">
+            Lingua<span className="text-brand-green">Compagnon</span>
           </h1>
           <WeekSelector currentWeek={currentWeek} onWeekChange={handleWeekChange} />
         </div>
-        <p className="text-sm text-slate-300">
-            <span className="font-semibold text-slate-100">Objectifs :</span> {currentThemes}
-        </p>
+         <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-600 flex-grow">
+                <span className="font-semibold text-gray-900">Objectifs :</span> {currentThemes}
+            </p>
+            <div className="flex items-center gap-2">
+                <button onClick={handleSave} aria-label="Sauvegarder la conversation" className="p-2 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"><SaveIcon className="w-5 h-5"/></button>
+                <button onClick={handleDownload} aria-label="Télécharger la conversation" className="p-2 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"><DownloadIcon className="w-5 h-5"/></button>
+                <button onClick={handleEnd} aria-label="Terminer la conversation" className="p-2 rounded-md text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors"><EndIcon className="w-5 h-5"/></button>
+            </div>
+        </div>
       </header>
       
-      <main className="flex-grow overflow-y-auto p-4">
-         {error && <div className="p-4 mb-4 text-sm text-red-200 bg-red-800 rounded-lg" role="alert">
+      <main className="flex-grow overflow-y-auto p-4 bg-gray-50">
+         {error && <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg" role="alert">
             <span className="font-medium">Erreur :</span> {error}
           </div>}
 
@@ -188,7 +249,7 @@ const App: React.FC = () => {
         </div>
       </main>
       
-      <footer className="p-2 sticky bottom-0 bg-slate-900">
+      <footer className="p-2 sticky bottom-0 bg-white border-t border-gray-200">
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
       </footer>
     </div>
