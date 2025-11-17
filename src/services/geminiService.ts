@@ -166,7 +166,7 @@ export const getWeekThemes = (week: number): string => {
     case 10:
       return "Donner son opinion sur des projets. Utilisation des pronoms possessifs et de la nominalisation.";
     case 11:
-      return "Révision générale des thèmes du Module 2 (projets, environnement, opinion) en vue de l'évaluation.";
+      return "Révision générale des thèmes du Module 2 (projets, environnement, opinion) en vue de la tâche orale.";
     default:
       return "Pratique conversationnelle générale pour renforcer les acquis.";
   }
