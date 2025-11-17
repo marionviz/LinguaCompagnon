@@ -11,9 +11,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ currentWeek, onWeekChange }
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="week-select" className="text-sm font-medium text-gray-600">
-        Semaine :
-      </label>
       <select
         id="week-select"
         value={currentWeek}
