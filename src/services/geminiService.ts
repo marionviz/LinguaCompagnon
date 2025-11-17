@@ -26,11 +26,61 @@ const getWeekContent = (week: number): string => {
 - Le passé récent (venir de + infinitif) et le futur proche (aller + infinitif).
 **Objectif de la conversation :** Proposez un jeu de rôle. Par exemple, une situation où l'apprenant doit appeler un collègue mais se trompe de numéro, ou bien il rencontre un ancien ami par hasard. Encouragez l'utilisation des formes de négation et du passé récent/futur proche.
 `;
+    case 3:
+      return `
+### Semaine 3 : Mon Travail et Mes Habitudes
+**Thèmes :** Présenter son travail, son entreprise, décrire ses habitudes professionnelles, le télétravail.
+**Vocabulaire :**
+- Le monde professionnel : entreprise, service, carrière, contrat, collègue, réunion.
+- Tâches quotidiennes : gérer des projets, répondre aux clients, évaluer des résultats.
+- Fréquence : toujours, souvent, parfois, rarement, jamais.
+**Grammaire :**
+- Le présent de l'indicatif (révision approfondie des verbes réguliers et irréguliers).
+- Les verbes en -DRE, -TRE, -OIR, -OIRE.
+**Objectif de la conversation :** Menez une conversation où l'apprenant décrit sa profession et ses tâches. Discutez des avantages et des inconvénients du télétravail ou de la semaine de 4 jours, en veillant à l'utilisation correcte du présent.
+`;
+    case 4:
+      return `
+### Semaine 4 : Communiquer et Réagir
+**Thèmes :** Communiquer de manière formelle et informelle (SMS, email), annoncer une nouvelle, exprimer des émotions.
+**Vocabulaire :**
+- Formules de politesse : "Chère Madame...", "Cordialement", "Salut !", "Bises".
+- Abréviations SMS : mdr, stp, bcp, rdv.
+- Expressions de sentiments : "C'est génial que...", "Dommage que...", "Je suis surpris que...".
+**Grammaire :**
+- Le subjonctif présent après les expressions de sentiments et d'opinion.
+- Distinction entre le vouvoiement (formel) et le tutoiement (informel).
+**Objectif de la conversation :** Proposez un jeu de rôle où l'apprenant doit annoncer une nouvelle (ex: il a eu une promotion) et doit réagir à une nouvelle que vous annoncez. Il doit utiliser des structures qui demandent le subjonctif.
+`;
+    case 5:
+      return `
+### Semaine 5 : Exprimer ses Souhaits et ses Craintes
+**Thèmes :** Parler de ses émotions, ses désirs, ses rêves, ses doutes et ses peurs.
+**Vocabulaire :**
+- Verbes de sentiment : souhaiter, désirer, rêver, craindre, avoir peur, douter.
+- Expressions : "J'aimerais que...", "J'ai peur de...", "Je doute que...".
+**Grammaire :**
+- Consolidation de l'utilisation du subjonctif ou de l'infinitif après les verbes de sentiment, de volonté et de doute.
+- Règle : 1 sujet -> verbe + de + infinitif. 2 sujets -> verbe + que + subjonctif.
+**Objectif de la conversation :** Discutez des aspirations professionnelles ou personnelles de l'apprenant. Posez des questions comme "Qu'est-ce que vous aimeriez faire dans 5 ans ?" ou "Y a-t-il quelque chose que vous craignez ?". Corrigez l'emploi du subjonctif/infinitif.
+`;
+    case 6:
+      return `
+### Semaine 6 : Demander et Offrir de l'Aide
+**Thèmes :** Demander un service, offrir son aide, accepter ou refuser poliment, interagir avec ses voisins.
+**Vocabulaire :**
+- Demander de l'aide : "Pourriez-vous...", "J'aurais besoin de...", "Ça vous dérangerait de...".
+- Offrir de l'aide : "Je peux vous aider ?", "Volontiers !".
+- Le voisinage : un voisin, prêter, rendre service.
+**Grammaire :**
+- Le conditionnel de politesse ("je voudrais", "tu pourrais", "j'aimerais").
+- Le pronom "en" (pour remplacer une quantité ou "de + nom").
+**Objectif de la conversation :** Créez une mise en situation. L'apprenant est dans un nouvel appartement et doit demander de l'aide à son voisin (vous). Encouragez l'utilisation du conditionnel de politesse. Ensuite, posez des questions pour pratiquer le pronom "en" ("Vous avez des outils ? Oui, j'en ai quelques-uns.").
+`;
     default:
       return `
 ### Semaine ${week} :
 **Objectif de la conversation :** L'apprenant est en semaine ${week}. Le contenu spécifique n'est pas détaillé, mais vous devez continuer à appliquer les principes de tutorat en vous basant sur le programme général :
-- Semaines 3-6 : Interaction en milieu francophone (donner des nouvelles, proposer des services, exprimer des sentiments). Grammaire : subjonctif, conditionnel.
 - Semaines 7-11 : Proposer et choisir des projets (éducation, environnement). Grammaire : subjonctif (but), conditionnel (propositions), pronoms possessifs, cause/conséquence.
 Menez une conversation générale en lien avec ces thèmes.
 `;
@@ -43,10 +93,15 @@ export const getWeekThemes = (week: number): string => {
       return "Révisions du Passé Composé/Imparfait en racontant un voyage. Pratique du comparatif/superlatif pour parler de musique et de lieux.";
     case 2:
       return "Apprendre à gérer des conversations (téléphone, rencontres). Utilisation de la négation et du futur/passé proche.";
+    case 3:
+      return "Décrire son travail et ses habitudes. Révision approfondie du présent de l'indicatif.";
+    case 4:
+      return "Communiquer (formel/informel) et exprimer des émotions. Introduction au subjonctif présent.";
+    case 5:
+      return "Exprimer ses souhaits, rêves et craintes. Maîtrise de l'alternance subjonctif/infinitif.";
+    case 6:
+      return "Demander et offrir de l'aide poliment avec le conditionnel. Utilisation du pronom 'en'.";
     default:
-      if (week >= 3 && week <= 6) {
-        return "Interaction en milieu francophone : donner des nouvelles, demander/offrir un service, exprimer des émotions. Introduction au subjonctif et conditionnel.";
-      }
       if (week >= 7 && week <= 11) {
         return "Discuter et défendre un projet (éducation, environnement). Utilisation des pronoms possessifs et expression de la cause/conséquence.";
       }
