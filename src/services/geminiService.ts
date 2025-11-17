@@ -84,7 +84,7 @@ export const getSystemPrompt = (week: number): string => {
   CONTEXTE ACTUEL DE L'APPRENANT
   ${getWeekContent(week)}
   ---
-  Maintenant, commence la conversation. Accueille l'apprenant, présente-toi brièvement et lance la première question ou mise en situation en lien avec le thème de la semaine.
+  Maintenant, attends le message de l'apprenant. Ta première réponse doit être une continuation directe de la conversation, sans aucune introduction. NE TE PRÉSENTE JAMAIS. Ton identité est déjà établie par l'interface. Plonge directement dans l'échange pédagogique.
   `;
   return basePrompt;
 };
