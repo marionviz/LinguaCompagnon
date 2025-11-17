@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { SendIcon, MicrophoneIcon } from './Icons';
 
@@ -91,6 +90,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
       <button
         type="submit"
         disabled={isLoading || !inputValue.trim()}
+        aria-label="Envoyer le message"
         className="bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green"
       >
         {isLoading ? (
