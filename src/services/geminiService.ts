@@ -77,12 +77,68 @@ const getWeekContent = (week: number): string => {
 - Le pronom "en" (pour remplacer une quantité ou "de + nom").
 **Objectif de la conversation :** Créez une mise en situation. L'apprenant est dans un nouvel appartement et doit demander de l'aide à son voisin (vous). Encouragez l'utilisation du conditionnel de politesse. Ensuite, posez des questions pour pratiquer le pronom "en" ("Vous avez des outils ? Oui, j'en ai quelques-uns.").
 `;
+    case 7:
+      return `
+### Semaine 7 : Droits et Projets
+**Thèmes :** Les droits de l'enfant, les projets éducatifs, décrire un projet.
+**Vocabulaire :**
+- Les droits et l'enfance : protection, égalité, éducation, santé, liberté d'expression.
+- Description de projet : objectif, but, public visé, actions, lieu, durée.
+- Préfixes et antonymes : (in)efficace, (dé)stabilisé, (mal)honnête.
+**Grammaire :**
+- La négation complexe : ne... ni... ni..., aucun(e)... ne...
+- Les prépositions avec les verbes : bénéficier de/à, aider à, offrir à, priver de.
+**Objectif de la conversation :** Discutez des droits de l'enfant qui semblent les plus importants à l'apprenant. Proposez-lui d'imaginer et de décrire un projet éducatif en utilisant le vocabulaire approprié et des phrases négatives pour dire ce que le projet n'est pas ou ce qu'il combat.
+`;
+    case 8:
+      return `
+### Semaine 8 : Engagement Citoyen et Environnement
+**Thèmes :** Projets citoyens et écologiques, le système de votation, les déchets, la biodiversité.
+**Vocabulaire :**
+- L'engagement : bénévole, association, lutter contre, défendre une cause.
+- L'environnement : déchets, recyclage, traitement, biodiversité, espèce menacée.
+**Grammaire :**
+- L'expression du but : pour, pour que (+ subjonctif), afin de, afin que (+ subjonctif).
+- L'expression de la quantité et de la proportion : la moitié de, un tiers de, la majorité de, 25% de.
+- Comparer des données : plus/moins de... que, deux fois plus de... que.
+**Objectif de la conversation :** Lancez un débat sur une initiative locale (ex: le recyclage). L'apprenant doit expliquer le but de l'initiative en utilisant les différentes expressions du but. Il doit aussi utiliser les expressions de quantité pour décrire des données (ex: "La majorité des déchets sont alimentaires.").
+`;
+    case 9:
+      return `
+### Semaine 9 : Initiatives Écologiques
+**Thèmes :** Promouvoir une initiative pour limiter les déchets, le recyclage, la récupération.
+**Vocabulaire :**
+- Traitement des déchets : trier, jeter, composter, incinérer, une décharge.
+- L'évolution : progresser, améliorer, augmenter, réduire, diminuer.
+**Grammaire :**
+- Consolidation de l'expression de la quantité, de la proportion et du but.
+- Comparer des données (révision).
+**Objectif de la conversation :** Proposez à l'apprenant de créer un slogan ou un court texte pour promouvoir une campagne de réduction des déchets. Il devra utiliser le vocabulaire de l'évolution des déchets et justifier l'initiative en exprimant son but.
+`;
+    case 10:
+      return `
+### Semaine 10 : Donner son Opinion sur des Projets
+**Thèmes :** Projets écologiques, exprimer son opinion, comparer des projets, la cause et la conséquence.
+**Vocabulaire :**
+- La nominalisation : transformer des verbes en noms (ex: décider -> la décision, construire -> la construction).
+- Exprimer son opinion : Je pense que, à mon avis, je suis d'accord avec...
+**Grammaire :**
+- Les pronoms possessifs : le mien, la tienne, les nôtres, les vôtres, etc.
+- Expressions simples de cause et conséquence : parce que, donc, grâce à, c'est pourquoi.
+**Objectif de la conversation :** Présentez deux projets fictifs à l'apprenant (ex: un projet de recyclage et un projet de jardin communautaire). Il doit comparer les deux, donner son avis, et expliquer son choix ("Je préfère ton projet, le mien est moins ambitieux.") en utilisant les pronoms possessifs et des expressions de cause/conséquence.
+`;
+    case 11:
+      return `
+### Semaine 11 : Bilan et Révisions
+**Thèmes :** Révision générale des thèmes du Module 2 (droits, projets, environnement, opinion).
+**Vocabulaire :** Révision du vocabulaire des semaines 7 à 10.
+**Grammaire :** Révision de la négation complexe, l'expression du but, les quantités, les pronoms possessifs et la cause/conséquence.
+**Objectif de la conversation :** Menez une conversation ouverte qui permet à l'apprenant de mobiliser les compétences acquises durant le module 2. Par exemple, "Si vous deviez créer votre propre association, quel serait son but et pourquoi ?". Préparez-le pour sa tâche orale finale.
+`;
     default:
       return `
-### Semaine ${week} :
-**Objectif de la conversation :** L'apprenant est en semaine ${week}. Le contenu spécifique n'est pas détaillé, mais vous devez continuer à appliquer les principes de tutorat en vous basant sur le programme général :
-- Semaines 7-11 : Proposer et choisir des projets (éducation, environnement). Grammaire : subjonctif (but), conditionnel (propositions), pronoms possessifs, cause/conséquence.
-Menez une conversation générale en lien avec ces thèmes.
+### Semaine ${week} : Pratique Libre
+**Objectif de la conversation :** L'apprenant a terminé le programme structuré. Menez une conversation générale pour renforcer tous les acquis des semaines précédentes. Laissez l'apprenant choisir les sujets de discussion s'il le souhaite.
 `;
   }
 };
@@ -101,10 +157,17 @@ export const getWeekThemes = (week: number): string => {
       return "Exprimer ses souhaits, rêves et craintes. Maîtrise de l'alternance subjonctif/infinitif.";
     case 6:
       return "Demander et offrir de l'aide poliment avec le conditionnel. Utilisation du pronom 'en'.";
+    case 7:
+      return "Discuter des droits de l'enfant et de projets éducatifs. Pratique de la négation et des prépositions verbales.";
+    case 8:
+      return "Parler de projets citoyens et écologiques. Exprimer le but, la quantité et comparer des données.";
+    case 9:
+      return "Promouvoir une initiative écologique. Consolidation de l'expression du but, de la quantité et de la comparaison.";
+    case 10:
+      return "Donner son opinion sur des projets. Utilisation des pronoms possessifs et de la nominalisation.";
+    case 11:
+      return "Révision générale des thèmes du Module 2 (projets, environnement, opinion) en vue de l'évaluation.";
     default:
-      if (week >= 7 && week <= 11) {
-        return "Discuter et défendre un projet (éducation, environnement). Utilisation des pronoms possessifs et expression de la cause/conséquence.";
-      }
       return "Pratique conversationnelle générale pour renforcer les acquis.";
   }
 };
