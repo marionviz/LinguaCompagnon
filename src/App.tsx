@@ -228,7 +228,7 @@ const App: React.FC = () => {
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center">
-            <img src={avatarDataUrl} alt="Avatar de Marion" className="w-12 h-12 rounded-full mr-3 border-2 border-white shadow-md" />
+            <img src="/avatar.jpg" alt="Avatar de Marion" className="w-12 h-12 rounded-full mr-3 border-2 border-white shadow-md" />
             <h1 className="text-xl font-bold text-gray-800">
               Lingua<span className="text-brand-green">Compagnon</span>
             </h1>
