@@ -94,7 +94,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
             type="button"
             onClick={() => insertCharacter(char)}
             disabled={isLoading}
-            className="px-3 py-1 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-brand-green hover:text-white hover:border-brand-green transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-brand-green"
+            className="px-3 py-1 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-green-600"
           >
             {char}
           </button>
