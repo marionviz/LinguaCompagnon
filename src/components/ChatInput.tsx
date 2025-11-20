@@ -83,7 +83,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
     }
   };
 
-  const specialChars = ['é', 'è', 'à', 'ç'];
+  const specialChars = ['é', 'è', 'à', 'ç', "'", 'ê', 'ù', 'œ'];
 
   return (
     <div className="flex flex-col bg-gray-100 border-t border-gray-200">
