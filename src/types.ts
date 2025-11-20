@@ -1,10 +1,8 @@
 export type MessageRole = 'user' | 'model';
 
-export type Feedback = 'thumbs-up' | 'thumbs-down';
-
 export interface ChatMessage {
   id: string;
-  role: MessageRole;
+  role: 'user' | 'model';
   text: string;
-  feedback?: Feedback;
+  hasPractice?: boolean;
 }
