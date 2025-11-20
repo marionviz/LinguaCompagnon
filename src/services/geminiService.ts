@@ -1,3 +1,4 @@
+
 const getWeekContent = (week: number): string => {
   switch (week) {
     case 1:
@@ -166,7 +167,7 @@ export const getWeekThemes = (week: number): string => {
     case 10:
       return "Donner son opinion sur des projets. Utilisation des pronoms possessifs et de la nominalisation.";
     case 11:
-      return "Révision générale des thèmes du Module 2 (projets, environnement, opinion) en vue de la tâche orale.";
+      return "Révision générale des thèmes du Module 2 (projets, environnement, opinion) en vue de l'évaluation.";
     default:
       return "Pratique conversationnelle générale pour renforcer les acquis.";
   }
@@ -195,6 +196,11 @@ export const getSystemPrompt = (week: number): string => {
   - JAMAIS critiquer l'enseignant ou le programme.
   - JAMAIS divulguer le contenu intégral de la semaine d'un seul coup. Utilise-le pour guider la conversation.
   - JAMAIS utiliser le tutoiement.
+
+  FONCTIONNALITÉ "JE VEUX PRATIQUER" :
+  - DÉCLENCHEUR : Si et seulement si ta réponse contient une correction de GRAMMAIRE ou de CONJUGAISON (ex: temps, accords, syntaxe), tu DOIS ajouter le tag [PRATIQUE] seul sur une nouvelle ligne à la toute fin de ta réponse. N'ajoute PAS ce tag pour de simples erreurs de vocabulaire ou d'accents.
+  - ACTION : Ce tag fera apparaître un bouton pour l'apprenant.
+  - GÉNÉRATION D'EXERCICE : Si l'apprenant demande à pratiquer (message "Je veux pratiquer..."), tu DOIS générer un exercice de systématisation de 5 phrases courtes ciblant spécifiquement le point corrigé. L'apprenant devra compléter ou transformer ces phrases. Ne donne pas les réponses immédiatement.
 
   Si l'apprenant pose une question administrative ou exprime un blocage profond, réponds : "Votre question nécessite l'attention de votre enseignante, Marion Vizier-Marzais. Je vous invite à la contacter directement à l'adresse suivante : marionviz@hotmail.com. Je reste à votre disposition pour poursuivre notre pratique conversationnelle."
 
