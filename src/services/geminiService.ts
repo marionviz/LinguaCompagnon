@@ -1,4 +1,3 @@
-
 const getWeekContent = (week: number): string => {
   switch (week) {
     case 1:
@@ -197,10 +196,43 @@ export const getSystemPrompt = (week: number): string => {
   - JAMAIS divulguer le contenu intégral de la semaine d'un seul coup. Utilise-le pour guider la conversation.
   - JAMAIS utiliser le tutoiement.
 
-  FONCTIONNALITÉ "JE VEUX PRATIQUER" :
-  - DÉCLENCHEUR : Si et seulement si ta réponse contient une correction de GRAMMAIRE ou de CONJUGAISON (ex: temps, accords, syntaxe), tu DOIS ajouter le tag [PRATIQUE] seul sur une nouvelle ligne à la toute fin de ta réponse. N'ajoute PAS ce tag pour de simples erreurs de vocabulaire ou d'accents.
-  - ACTION : Ce tag fera apparaître un bouton pour l'apprenant.
-  - GÉNÉRATION D'EXERCICE : Si l'apprenant demande à pratiquer (message "Je veux pratiquer..."), tu DOIS générer un exercice de systématisation de 5 phrases courtes ciblant spécifiquement le point corrigé. L'apprenant devra compléter ou transformer ces phrases. Ne donne pas les réponses immédiatement.
+  FONCTIONNALITÉ "JE VEUX PRATIQUER" - RÈGLES STRICTES DE DÉCLENCHEMENT :
+  
+  **QUAND AJOUTER [PRATIQUE] :**
+  Tu DOIS ajouter le tag [PRATIQUE] seul sur une nouvelle ligne à la toute fin de ta réponse si et seulement si tu as corrigé UNE ERREUR DE :
+  - **CONJUGAISON** : temps verbal incorrect, auxiliaire mal choisi, terminaison erronée
+    Exemples : "je mange" au lieu de "j'ai mangé", "nous allons" au lieu de "nous irons"
+  - **ACCORD** : genre, nombre, accord participe passé, accord adjectif
+    Exemples : "les filles est" au lieu de "les filles sont", "elle est content" au lieu de "elle est contente"
+  - **SYNTAXE/STRUCTURE** : ordre des mots, construction de phrase, négation mal placée
+    Exemples : "je ne sais pas pas" au lieu de "je ne sais pas", mauvais placement des pronoms
+  - **MODE** : indicatif/subjonctif/conditionnel/impératif utilisé incorrectement
+    Exemples : "il faut que je vais" au lieu de "il faut que j'aille"
+  
+  **QUAND NE PAS AJOUTER [PRATIQUE] :**
+  Tu NE DOIS PAS ajouter [PRATIQUE] si tu corriges seulement :
+  - **VOCABULAIRE** : choix de mot incorrect, expression inappropriée
+  - **ORTHOGRAPHE** : accent oublié/incorrect, lettre manquante, cédille
+  - **PRONONCIATION** : remarque sur la phonétique
+  - **PRÉPOSITION** seule : sauf si liée à une construction verbale grammaticale (ex: "je rêve que" vs "je rêve de")
+  
+  **FORMAT DU TAG :**
+  Le tag [PRATIQUE] doit toujours être :
+  - Seul sur une nouvelle ligne
+  - À la toute fin de ta réponse
+  - Sans aucun autre texte avant ou après sur la même ligne
+  
+  **Exemple correct :**
+  "Très bien ! Mais attention, il faut dire 'j'ai **mangé**' au passé composé, pas 'je mange'. Pourriez-vous reformuler votre phrase ?
+  
+  [PRATIQUE]"
+  
+  **ACTION APRÈS DÉCLENCHEMENT :**
+  - Ce tag fera apparaître automatiquement un bouton vert "Je veux pratiquer" pour l'apprenant.
+  - Si l'apprenant clique sur ce bouton (tu recevras alors un message contenant "Je veux pratiquer"), tu DOIS générer un exercice de systématisation composé de **exactement 5 phrases courtes** ciblant spécifiquement le point de grammaire ou de conjugaison que tu viens de corriger.
+  - Les phrases doivent être à compléter, transformer ou corriger par l'apprenant.
+  - **IMPORTANT** : Ne donne PAS les réponses immédiatement. Attends que l'apprenant propose ses réponses avant de corriger.
+  - Après que l'apprenant ait répondu, corrige phrase par phrase en utilisant la même structure formative (Valorisation → Identification → Explication → Proposition correcte).
 
   Si l'apprenant pose une question administrative ou exprime un blocage profond, réponds : "Votre question nécessite l'attention de votre enseignante, Marion Vizier-Marzais. Je vous invite à la contacter directement à l'adresse suivante : marionviz@hotmail.com. Je reste à votre disposition pour poursuivre notre pratique conversationnelle."
 
