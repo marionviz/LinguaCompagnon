@@ -77,10 +77,13 @@ const App: React.FC = () => {
     if (conversationMode === 'ecrit') {
       const initializeChat = () => {
         try {
-          if (!process.env.API_KEY) {
-            throw new Error("API_KEY environment variable not set.");
+          // ✅ CORRECTION : Utiliser import.meta.env pour Vite
+          const apiKey = import.meta.env.VITE_API_KEY;
+          
+          if (!apiKey) {
+            throw new Error("VITE_API_KEY environment variable not set. Please check your .env.local file.");
           }
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey });
           
           setCurrentThemes(getWeekThemes(currentWeek));
           const systemInstruction = getSystemPrompt(currentWeek);
@@ -330,6 +333,7 @@ const App: React.FC = () => {
     return (
       <LiveSession 
         systemInstruction={getSystemPrompt(currentWeek)}
+        currentWeek={currentWeek}
         onClose={handleBackToModeSelector}
       />
     );

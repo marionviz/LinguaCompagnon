@@ -5,6 +5,7 @@ import { BotIcon, EndIcon } from './Icons';
 interface LiveSessionProps {
   systemInstruction: string;
   onClose: () => void;
+  currentWeek?: number;
 }
 
 /**
@@ -18,7 +19,7 @@ interface LiveSessionProps {
  * Avantages : Plus simple, fonctionne partout
  * Inconvénients : Qualité audio moindre, latence plus élevée
  */
-const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction, onClose }) => {
+const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction, onClose, currentWeek = 1 }) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -43,8 +44,9 @@ const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction,
           config: { systemInstruction },
         });
 
-        // Message de bienvenue amélioré
-        const welcome = `Bonjour ! Je suis LinguaCompagnon. Je vais vous parler en français et vous écouter. Dans quelques secondes, je commencerai à écouter. Parlez naturellement !`;
+        // Message de bienvenue COURT avec objectif
+        const weekObjective = systemInstruction.split('CONTEXTE ACTUEL DE L\'APPRENANT')[1]?.split('---')[0]?.trim() || `Semaine ${currentWeek}`;
+        const welcome = `Bonjour ! Aujourd'hui, nous travaillons sur : ${weekObjective}. À vous !`;
         setMessages([{ role: 'model', text: welcome }]);
         await speak(welcome);
 
@@ -288,17 +290,13 @@ const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction,
             </div>
           )}
 
-          {/* Historique des messages */}
-          {messages.length > 0 && (
+          {/* Historique des messages - SEULEMENT l'apprenant */}
+          {messages.filter(m => m.role === 'user').length > 0 && (
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 max-w-md max-h-64 overflow-y-auto">
-              <h3 className="text-xs uppercase text-gray-400 mb-3">Historique</h3>
-              {messages.slice(-4).map((msg, i) => (
-                <div key={i} className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                  <div className={`inline-block px-3 py-2 rounded-lg text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-brand-green text-white' 
-                      : 'bg-gray-700 text-gray-200'
-                  }`}>
+              <h3 className="text-xs uppercase text-gray-400 mb-3">Vos messages</h3>
+              {messages.filter(m => m.role === 'user').slice(-5).map((msg, i) => (
+                <div key={i} className="mb-3 text-right">
+                  <div className="inline-block px-3 py-2 rounded-lg text-sm bg-brand-green text-white">
                     {msg.text}
                   </div>
                 </div>
