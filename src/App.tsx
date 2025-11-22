@@ -20,7 +20,6 @@ const App: React.FC = () => {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   
-  // ✅ NOUVEAU : Mode de conversation
   const [conversationMode, setConversationMode] = useState<ConversationMode>(null);
   const [showModeSelector, setShowModeSelector] = useState(true);
 
@@ -70,14 +69,12 @@ const App: React.FC = () => {
         setMessages([firstMessage]);
         setIsLoading(false);
     }, 500);
-  }
+  };
 
   useEffect(() => {
-    // ✅ Initialiser le chat seulement en mode écrit
     if (conversationMode === 'ecrit') {
       const initializeChat = () => {
         try {
-          // ✅ CORRECTION : Utiliser import.meta.env pour Vite
           const apiKey = import.meta.env.VITE_API_KEY;
           
           if (!apiKey) {
@@ -104,20 +101,17 @@ const App: React.FC = () => {
       };
       initializeChat();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWeek, conversationMode]);
   
   const handleWeekChange = (week: number) => {
     setCurrentWeek(week);
   };
 
-  // ✅ NOUVEAU : Sélection du mode
   const handleModeSelect = (mode: ConversationMode) => {
     setConversationMode(mode);
     setShowModeSelector(false);
   };
 
-  // ✅ NOUVEAU : Retour au sélecteur de mode
   const handleBackToModeSelector = () => {
     setConversationMode(null);
     setShowModeSelector(true);
@@ -215,15 +209,12 @@ const App: React.FC = () => {
       for await (const chunk of result) {
         streamedText += chunk.text;
         
-        // ✅ DÉTECTION DE [PRATIQUE]
         let displayText = streamedText;
         let currentHasPractice = false;
 
         if (displayText.includes('[PRATIQUE]')) {
           displayText = displayText.replace('[PRATIQUE]', '').trim();
           currentHasPractice = true;
-          console.log('🟢 [PRATIQUE] détecté ! hasPractice =', currentHasPractice);
-          console.log('📝 Texte après remplacement:', displayText);
         }
         
         setMessages((prevMessages) => {
@@ -257,7 +248,6 @@ const App: React.FC = () => {
     }
   };
 
-  // ✅ AFFICHAGE DU SÉLECTEUR DE MODE
   if (showModeSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
@@ -281,7 +271,6 @@ const App: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
-            {/* Mode Écrit */}
             <button
               onClick={() => handleModeSelect('ecrit')}
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
@@ -300,7 +289,6 @@ const App: React.FC = () => {
               </ul>
             </button>
 
-            {/* Mode Oral */}
             <button
               onClick={() => handleModeSelect('oral')}
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
@@ -328,18 +316,15 @@ const App: React.FC = () => {
     );
   }
 
-  // ✅ AFFICHAGE DU MODE ORAL
   if (conversationMode === 'oral') {
     return (
       <LiveSession 
         systemInstruction={getSystemPrompt(currentWeek)}
-        currentWeek={currentWeek}
         onClose={handleBackToModeSelector}
       />
     );
   }
 
-  // ✅ AFFICHAGE DU MODE ÉCRIT (interface actuelle)
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
