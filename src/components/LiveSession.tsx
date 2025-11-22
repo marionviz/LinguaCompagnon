@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
-import { float32ToInt16, base64ToArrayBuffer, arrayBufferToBase64 } from '../utils/audioUtils';
+import { GoogleGenAI } from '@google/genai';
 import { BotIcon, EndIcon } from './Icons';
 
 interface LiveSessionProps {
@@ -8,179 +7,296 @@ interface LiveSessionProps {
   onClose: () => void;
 }
 
-const LiveSession: React.FC<LiveSessionProps> = ({ systemInstruction, onClose }) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [volume, setVolume] = useState(0);
+/**
+ * VERSION ALTERNATIVE SANS LIVE API
+ * 
+ * Cette version utilise :
+ * - Web Speech API pour la reconnaissance vocale
+ * - Gemini API standard pour les réponses
+ * - SpeechSynthesis API pour la lecture vocale
+ * 
+ * Avantages : Plus simple, fonctionne partout
+ * Inconvénients : Qualité audio moindre, latence plus élevée
+ */
+const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction, onClose }) => {
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Array<{role: 'user' | 'model', text: string}>>([]);
   
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const inputSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const sessionPromiseRef = useRef<Promise<any> | null>(null);
-  const nextStartTimeRef = useRef<number>(0);
-  const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-  const isCleanupRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
+  const chatRef = useRef<any>(null);
 
   useEffect(() => {
-    const startSession = async () => {
+    // Initialiser Gemini Chat
+    const initChat = async () => {
       try {
-        if (!process.env.API_KEY) {
-          throw new Error("API_KEY environment variable not set.");
+        const apiKey = import.meta.env.VITE_API_KEY;
+        if (!apiKey) {
+          throw new Error("VITE_API_KEY manquante dans .env.local");
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-            sampleRate: 16000,
-        });
-        audioContextRef.current = audioContext;
-        
-        const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-            sampleRate: 24000,
+        const ai = new GoogleGenAI({ apiKey });
+        chatRef.current = ai.chats.create({
+          model: 'gemini-2.5-flash',
+          config: { systemInstruction },
         });
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Setup Live API Session
-        sessionPromiseRef.current = ai.live.connect({
-          model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-          config: {
-            systemInstruction,
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
-            },
-          },
-          callbacks: {
-            onopen: () => {
-              console.log('Live session connected');
-              setIsConnected(true);
-
-              // Process Input Audio
-              const source = audioContext.createMediaStreamSource(stream);
-              inputSourceRef.current = source;
-              
-              const processor = audioContext.createScriptProcessor(4096, 1, 1);
-              processorRef.current = processor;
-
-              processor.onaudioprocess = (e) => {
-                if (isCleanupRef.current) return;
-                const inputData = e.inputBuffer.getChannelData(0);
-                
-                // Simple volume meter
-                let sum = 0;
-                for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
-                setVolume(Math.sqrt(sum / inputData.length));
-
-                const int16Data = float32ToInt16(inputData);
-                const base64Data = arrayBufferToBase64(int16Data.buffer);
-                
-                sessionPromiseRef.current?.then(session => {
-                    session.sendRealtimeInput({
-                        media: {
-                            mimeType: 'audio/pcm;rate=16000',
-                            data: base64Data
-                        }
-                    });
-                });
-              };
-
-              source.connect(processor);
-              processor.connect(audioContext.destination);
-            },
-            onmessage: async (message: LiveServerMessage) => {
-                 if (isCleanupRef.current) return;
-
-                const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-                if (audioData) {
-                    const audioBufferChunk = await outputAudioContext.decodeAudioData(base64ToArrayBuffer(audioData));
-                    
-                    const source = outputAudioContext.createBufferSource();
-                    source.buffer = audioBufferChunk;
-                    source.connect(outputAudioContext.destination);
-                    
-                    const currentTime = outputAudioContext.currentTime;
-                    if (nextStartTimeRef.current < currentTime) {
-                        nextStartTimeRef.current = currentTime;
-                    }
-                    
-                    source.start(nextStartTimeRef.current);
-                    nextStartTimeRef.current += audioBufferChunk.duration;
-                    
-                    sourcesRef.current.add(source);
-                    source.onended = () => sourcesRef.current.delete(source);
-                }
-                
-                if (message.serverContent?.interrupted) {
-                    sourcesRef.current.forEach(s => s.stop());
-                    sourcesRef.current.clear();
-                    nextStartTimeRef.current = 0;
-                }
-            },
-            onclose: () => {
-              console.log('Live session closed');
-              setIsConnected(false);
-            },
-            onerror: (err) => {
-              console.error('Live session error', err);
-              setError('Une erreur est survenue avec la connexion vocale.');
-            }
-          }
-        });
+        // Message de bienvenue
+        const welcome = "Bonjour ! Je suis prêt à pratiquer avec vous à l'oral. Parlez quand vous voulez !";
+        setMessages([{ role: 'model', text: welcome }]);
+        speak(welcome);
 
       } catch (err) {
-        console.error("Failed to initialize live session", err);
-        setError("Impossible d'accéder au microphone ou de démarrer la session.");
+        console.error("Failed to init chat", err);
+        setError("Impossible d'initialiser la conversation.");
       }
     };
 
-    startSession();
+    initChat();
+
+    // Initialiser Web Speech API
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      setError(
+        "⚠️ Votre navigateur ne supporte pas la reconnaissance vocale.\n\n" +
+        "Utilisez Chrome, Edge ou Safari sur Mac."
+      );
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.lang = 'fr-FR';
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      setTranscript(finalTranscript || interimTranscript);
+
+      // Si phrase finale détectée, envoyer à Gemini
+      if (finalTranscript) {
+        handleUserSpeech(finalTranscript.trim());
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error', event.error);
+      
+      if (event.error === 'not-allowed') {
+        setError(
+          "⚠️ Accès au microphone refusé.\n\n" +
+          "Autorisez le microphone dans votre navigateur."
+        );
+      } else if (event.error === 'no-speech') {
+        // Relancer automatiquement
+        recognition.start();
+      }
+    };
+
+    recognition.onend = () => {
+      if (isListening) {
+        recognition.start(); // Relancer automatiquement
+      }
+    };
+
+    recognitionRef.current = recognition;
 
     return () => {
-        isCleanupRef.current = true;
-        sessionPromiseRef.current?.then(session => session.close());
-        
-        inputSourceRef.current?.disconnect();
-        processorRef.current?.disconnect();
-        audioContextRef.current?.close();
-        
-        sourcesRef.current.forEach(s => s.stop());
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      window.speechSynthesis.cancel();
     };
   }, [systemInstruction]);
+
+  // Démarrer l'écoute automatiquement après le message de bienvenue
+  useEffect(() => {
+    if (messages.length > 0 && !isListening && recognitionRef.current) {
+      setTimeout(() => {
+        startListening();
+      }, 2000); // 2 secondes après le message de bienvenue
+    }
+  }, [messages]);
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error("Erreur démarrage reconnaissance", err);
+      }
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const handleUserSpeech = async (userText: string) => {
+    if (!userText.trim() || !chatRef.current) return;
+
+    // Arrêter l'écoute pendant la réponse
+    stopListening();
+    setTranscript('');
+
+    // Ajouter message utilisateur
+    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+
+    try {
+      // Envoyer à Gemini
+      const result = await chatRef.current.sendMessageStream({ message: userText });
+      
+      let fullResponse = '';
+      for await (const chunk of result) {
+        fullResponse += chunk.text;
+      }
+
+      // Nettoyer la réponse
+      fullResponse = fullResponse.replace(/\[PRATIQUE\]/g, '').trim();
+
+      // Ajouter réponse du modèle
+      setMessages(prev => [...prev, { role: 'model', text: fullResponse }]);
+
+      // Parler la réponse
+      await speak(fullResponse);
+
+      // Redémarrer l'écoute
+      setTimeout(() => {
+        startListening();
+      }, 500);
+
+    } catch (err) {
+      console.error("Erreur Gemini", err);
+      setError("Erreur lors de la génération de la réponse.");
+      startListening(); // Redémarrer quand même
+    }
+  };
+
+  const speak = (text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      window.speechSynthesis.cancel();
+      
+      const cleanText = text.replace(/\*\*/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      // Essayer de trouver une voix française
+      const voices = window.speechSynthesis.getVoices();
+      const frenchVoice = voices.find(v => v.lang === 'fr-FR') || voices[0];
+      if (frenchVoice) utterance.voice = frenchVoice;
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        resolve();
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        resolve();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center text-white p-4">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-bold mb-2">Mode Conversation Orale</h2>
         <p className="text-gray-300">Parlez naturellement avec votre tuteur.</p>
+        <p className="text-sm text-gray-400 mt-2">(Version simplifiée - Web Speech API)</p>
       </div>
 
       {error ? (
-          <div className="bg-red-500/20 border border-red-500 text-red-100 px-4 py-3 rounded mb-6 max-w-md">
+          <div className="bg-red-500/20 border border-red-500 text-red-100 px-6 py-4 rounded mb-6 max-w-md text-center whitespace-pre-line">
               {error}
           </div>
       ) : (
-        <div className="relative w-48 h-48 flex items-center justify-center mb-12">
-            {/* Animated circles based on volume/connection */}
-            <div className={`absolute inset-0 rounded-full border-2 border-brand-green opacity-50 transition-all duration-100`}
-                 style={{ transform: `scale(${1 + volume * 5})` }} />
-            <div className={`absolute inset-4 rounded-full border-2 border-brand-green opacity-30 transition-all duration-200`} 
-                 style={{ transform: `scale(${1 + volume * 3})` }} />
+        <div className="flex flex-col items-center">
+          {/* Animation visuelle */}
+          <div className="relative w-48 h-48 flex items-center justify-center mb-8">
+            {isListening && (
+              <>
+                <div className="absolute inset-0 rounded-full border-2 border-brand-green opacity-50 animate-ping" />
+                <div className="absolute inset-4 rounded-full border-2 border-brand-green opacity-30 animate-pulse" />
+              </>
+            )}
             
-            <div className={`w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center shadow-lg z-10 border-4 ${isConnected ? 'border-brand-green' : 'border-gray-600'}`}>
-                 <BotIcon className={`w-16 h-16 ${isConnected ? 'text-brand-green' : 'text-gray-500'}`} />
+            <div className={`w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center shadow-lg z-10 border-4 ${
+              isSpeaking ? 'border-blue-500 animate-pulse' : 
+              isListening ? 'border-brand-green' : 'border-gray-600'
+            }`}>
+              <BotIcon className={`w-16 h-16 ${
+                isSpeaking ? 'text-blue-500' : 
+                isListening ? 'text-brand-green' : 'text-gray-500'
+              }`} />
             </div>
-            
-            {isConnected && (
-                 <div className="absolute -bottom-12 text-sm font-medium text-brand-green animate-pulse">
-                     Écoute en cours...
-                 </div>
+          </div>
+
+          {/* État */}
+          <div className="text-center mb-6">
+            {isSpeaking && (
+              <div className="text-blue-400 font-medium animate-pulse">
+                🗣️ En train de parler...
+              </div>
             )}
-             {!isConnected && !error && (
-                 <div className="absolute -bottom-12 text-sm font-medium text-gray-400">
-                     Connexion...
-                 </div>
+            {isListening && !isSpeaking && (
+              <div className="text-brand-green font-medium animate-pulse">
+                👂 Écoute en cours...
+              </div>
             )}
+            {!isListening && !isSpeaking && (
+              <div className="text-gray-400 font-medium">
+                ⏸️ En pause
+              </div>
+            )}
+          </div>
+
+          {/* Transcript en temps réel */}
+          {transcript && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 max-w-md">
+              <p className="text-sm text-gray-300 italic">"{transcript}"</p>
+            </div>
+          )}
+
+          {/* Historique des messages */}
+          {messages.length > 0 && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 max-w-md max-h-64 overflow-y-auto">
+              <h3 className="text-xs uppercase text-gray-400 mb-3">Historique</h3>
+              {messages.slice(-4).map((msg, i) => (
+                <div key={i} className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                  <div className={`inline-block px-3 py-2 rounded-lg text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-brand-green text-white' 
+                      : 'bg-gray-700 text-gray-200'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -195,4 +311,4 @@ const LiveSession: React.FC<LiveSessionProps> = ({ systemInstruction, onClose })
   );
 };
 
-export default LiveSession;
+export default LiveSessionAlternative;
