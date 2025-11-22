@@ -6,7 +6,7 @@ import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import ChatMessageComponent from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
-import LiveSession from './components/LiveSession';
+import LiveTutorOral from './components/LiveTutorOral';
 import { DownloadIcon, EndIcon, PhoneIcon, ChatBubbleLeftRightIcon } from './components/Icons';
 
 type ConversationMode = 'ecrit' | 'oral' | null;
@@ -318,8 +318,8 @@ const App: React.FC = () => {
 
   if (conversationMode === 'oral') {
     return (
-      <LiveSession 
-        systemInstruction={getSystemPrompt(currentWeek)}
+      <LiveTutorOral 
+        weekNumber={currentWeek}
         onClose={handleBackToModeSelector}
       />
     );
