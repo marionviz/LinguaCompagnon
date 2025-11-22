@@ -1,6 +1,3 @@
-Livesession stable · TSX
-Copier
-
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { BotIcon, EndIcon } from './Icons';
