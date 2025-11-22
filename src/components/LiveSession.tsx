@@ -1,3 +1,6 @@
+Livesession stable · TSX
+Copier
+
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { BotIcon, EndIcon } from './Icons';
@@ -5,21 +8,16 @@ import { BotIcon, EndIcon } from './Icons';
 interface LiveSessionProps {
   systemInstruction: string;
   onClose: () => void;
-  currentWeek?: number;
 }
 
 /**
- * VERSION ALTERNATIVE SANS LIVE API
+ * VERSION STABLE - MODE ORAL
  * 
- * Cette version utilise :
- * - Web Speech API pour la reconnaissance vocale
- * - Gemini API standard pour les réponses
- * - SpeechSynthesis API pour la lecture vocale
- * 
- * Avantages : Plus simple, fonctionne partout
- * Inconvénients : Qualité audio moindre, latence plus élevée
+ * Message de bienvenue standard
+ * Historique complet (agent + apprenant)
+ * Transcript visible
  */
-const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction, onClose, currentWeek = 1 }) => {
+const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction, onClose }) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -44,9 +42,8 @@ const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction,
           config: { systemInstruction },
         });
 
-        // Message de bienvenue COURT avec objectif
-        const weekObjective = systemInstruction.split('CONTEXTE ACTUEL DE L\'APPRENANT')[1]?.split('---')[0]?.trim() || `Semaine ${currentWeek}`;
-        const welcome = `Bonjour ! Aujourd'hui, nous travaillons sur : ${weekObjective}. À vous !`;
+        // Message de bienvenue
+        const welcome = "Bonjour ! Je suis prêt à pratiquer avec vous à l'oral. Parlez quand vous voulez !";
         setMessages([{ role: 'model', text: welcome }]);
         await speak(welcome);
 
@@ -225,11 +222,8 @@ const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction,
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center text-white p-4">
       <div className="mb-8 text-center">
-        <h2 className="text-3xl font-bold mb-2">🎤 Conversation Orale</h2>
-        <p className="text-gray-300 text-lg">Pratiquez le français à l'oral avec LinguaCompagnon</p>
-        <p className="text-sm text-gray-400 mt-2">
-          💡 L'agent va vous parler, puis vous écouter. Conversez naturellement !
-        </p>
+        <h2 className="text-3xl font-bold mb-2">Mode Conversation Orale</h2>
+        <p className="text-gray-300">Parlez naturellement avec votre tuteur.</p>
       </div>
 
       {error ? (
@@ -258,45 +252,43 @@ const LiveSessionAlternative: React.FC<LiveSessionProps> = ({ systemInstruction,
             </div>
           </div>
 
-          {/* État - Plus clair */}
+          {/* État */}
           <div className="text-center mb-6">
             {isSpeaking && (
-              <div className="text-blue-400 font-medium text-lg animate-pulse">
-                🗣️ LinguaCompagnon parle...
+              <div className="text-blue-400 font-medium animate-pulse">
+                🗣️ En train de parler...
               </div>
             )}
-            {isListening && !isSpeaking && !transcript && (
-              <div className="text-brand-green font-medium text-lg animate-pulse">
-                👂 J'écoute... Parlez maintenant !
-              </div>
-            )}
-            {isListening && !isSpeaking && transcript && (
-              <div className="text-yellow-400 font-medium text-lg animate-pulse">
-                ✍️ Je vous entends...
+            {isListening && !isSpeaking && (
+              <div className="text-brand-green font-medium animate-pulse">
+                👂 Écoute en cours...
               </div>
             )}
             {!isListening && !isSpeaking && (
-              <div className="text-gray-400 font-medium text-lg">
-                ⏸️ Session en pause
+              <div className="text-gray-400 font-medium">
+                ⏸️ En pause
               </div>
             )}
           </div>
 
-          {/* Transcript en temps réel - Plus visible */}
+          {/* Transcript en temps réel */}
           {transcript && (
-            <div className="bg-brand-green/20 border-2 border-brand-green rounded-lg p-4 mb-6 max-w-md">
-              <p className="text-xs uppercase text-brand-green font-semibold mb-1">Vous dites :</p>
-              <p className="text-base text-white font-medium">"{transcript}"</p>
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 max-w-md">
+              <p className="text-sm text-gray-300 italic">"{transcript}"</p>
             </div>
           )}
 
-          {/* Historique des messages - SEULEMENT l'apprenant */}
-          {messages.filter(m => m.role === 'user').length > 0 && (
+          {/* Historique des messages */}
+          {messages.length > 0 && (
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6 max-w-md max-h-64 overflow-y-auto">
-              <h3 className="text-xs uppercase text-gray-400 mb-3">Vos messages</h3>
-              {messages.filter(m => m.role === 'user').slice(-5).map((msg, i) => (
-                <div key={i} className="mb-3 text-right">
-                  <div className="inline-block px-3 py-2 rounded-lg text-sm bg-brand-green text-white">
+              <h3 className="text-xs uppercase text-gray-400 mb-3">Historique</h3>
+              {messages.slice(-4).map((msg, i) => (
+                <div key={i} className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                  <div className={`inline-block px-3 py-2 rounded-lg text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-brand-green text-white' 
+                      : 'bg-gray-700 text-gray-200'
+                  }`}>
                     {msg.text}
                   </div>
                 </div>
