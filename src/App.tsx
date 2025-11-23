@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const [conversationMode, setConversationMode] = useState<ConversationMode>(null);
   const [showModeSelector, setShowModeSelector] = useState(true);
   const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
-  const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
 
   const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
