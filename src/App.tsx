@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [conversationMode, setConversationMode] = useState<ConversationMode>(null);
   const [showModeSelector, setShowModeSelector] = useState(true);
   const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
+  const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
 
   const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -292,7 +293,9 @@ const App: React.FC = () => {
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
             >
               <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
-                <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" />
+                <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Écrit</h3>
               <p className="text-gray-600 text-center mb-4">

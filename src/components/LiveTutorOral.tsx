@@ -42,6 +42,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [lastCorrection, setLastCorrection] = useState<Correction | null>(null);
+  const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
 
   // Refs pour gestion audio
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
@@ -165,6 +166,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
                    setLastCorrection(correctionData);
+                   setAllCorrections(prev => [...prev, correctionData]);
                    
                    // Acquitter le tool call
                    if (sessionPromiseRef.current) {
@@ -289,48 +291,42 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 z-50 flex flex-col items-center justify-between p-8 text-white">
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
       
-      {/* Overlay de correction */}
-      {lastCorrection && connectionState === ConnectionState.CONNECTED && (
-        <div className="absolute top-8 left-8 right-8 z-20 animate-fadeIn">
-          <div className="bg-white/95 backdrop-blur-md border-l-4 border-brand-green shadow-2xl p-6 rounded-lg">
-            <div className="flex items-start gap-4">
-              <div className="bg-brand-green/20 p-3 rounded-full">
-                <svg className="w-6 h-6 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-brand-green uppercase mb-2">✨ Correction</h4>
-                <div className="text-base text-gray-500 line-through mb-2">{lastCorrection.originalSentence}</div>
-                <div className="text-lg font-semibold text-gray-900 flex items-center gap-3 mb-3">
-                  <span>→</span>
-                  {lastCorrection.correctedSentence}
-                </div>
-                <p className="text-sm text-gray-600 italic bg-gray-50 p-3 rounded">
-                  💡 {lastCorrection.explanation}
-                </p>
-              </div>
-              <button 
-                onClick={() => setLastCorrection(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-              >
-                ×
-              </button>
+      {/* Header comme le mode écrit */}
+      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              LC
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                Lingua<span className="text-brand-green">Compagnon</span>
+              </h1>
+              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
             </div>
           </div>
+          <button
+            onClick={handleEndCall}
+            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
+            </svg>
+            Terminer
+          </button>
         </div>
-      )}
+        <p className="text-sm text-gray-600">
+          <span className="font-semibold text-gray-900">Objectif :</span> {week.description}
+        </p>
+      </header>
 
-      {/* Header */}
-      <div className="text-center z-10">
-        <h2 className="text-3xl font-bold mb-2">{week.title}</h2>
-        <p className="text-gray-300 text-sm max-w-2xl mx-auto">{week.description}</p>
-      </div>
-
-      {/* Visualiseur central */}
-      <div className="flex-1 flex items-center justify-center z-10">
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
+        
+      {/* Zone centrale avec visualiseur */}
+      <div className="flex-1 flex items-center justify-center">
         {connectionState === ConnectionState.DISCONNECTED && (
           <button 
             onClick={startSession}
@@ -366,34 +362,34 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
         {connectionState === ConnectionState.CONNECTED && (
           <div className="relative">
-            <div className={`w-64 h-64 rounded-full flex items-center justify-center transition-all duration-500 ${
+            <div className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 ${
               isAiSpeaking 
-                ? 'bg-brand-green shadow-2xl shadow-brand-green/50 scale-110' 
-                : 'bg-slate-700/50 border-4 border-slate-600'
+                ? 'bg-brand-green shadow-xl shadow-brand-green/30' 
+                : 'bg-white border-4 border-gray-200 shadow-lg'
             }`}>
               {isAiSpeaking ? (
                 <div className="flex flex-col items-center text-white">
-                  <svg className="w-16 h-16 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-10 h-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   </svg>
-                  <span className="text-sm font-medium mt-3">LinguaCompagnon parle...</span>
+                  <span className="text-xs font-medium mt-2">François parle...</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-2 h-16">
+                  <div className="flex items-center gap-2 h-12">
                     {[...Array(5)].map((_, i) => (
                       <div 
                         key={i} 
-                        className="w-3 bg-brand-green rounded-full transition-all duration-75"
+                        className="w-2 bg-brand-green rounded-full transition-all duration-75"
                         style={{ 
-                          height: isMicMuted ? '8px' : `${Math.max(8, Math.min(64, volumeLevel * ((i+1)/1.5)))}px`,
+                          height: isMicMuted ? '6px' : `${Math.max(6, Math.min(48, volumeLevel * ((i+1)/1.5)))}px`,
                           opacity: isMicMuted ? 0.3 : 1 
                         }}
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-400 font-medium mt-4 uppercase tracking-wide">
-                    {isMicMuted ? '🎤 Micro coupé' : '👂 À votre tour'}
+                  <span className="text-xs text-gray-500 font-medium mt-3 uppercase tracking-wide">
+                    {isMicMuted ? '🎤 Micro coupé' : '👂 À vous'}
                   </span>
                 </div>
               )}
@@ -402,35 +398,80 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         )}
       </div>
 
-      {/* Contrôles */}
-      <div className="flex items-center gap-6 z-10">
-        <button
-          onClick={() => setIsMicMuted(!isMicMuted)}
-          disabled={connectionState !== ConnectionState.CONNECTED}
-          className={`p-5 rounded-full transition-all ${
-            isMicMuted 
-              ? 'bg-gray-600 text-gray-300' 
-              : 'bg-white/10 text-white hover:bg-white/20'
-          } disabled:opacity-30 disabled:cursor-not-allowed`}
-        >
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isMicMuted ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            )}
-          </svg>
-        </button>
+      {/* Zone des corrections en bas */}
+      {allCorrections.length > 0 && (
+        <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-bold text-gray-800 uppercase">📝 Corrections ({allCorrections.length})</h3>
+            <button
+              onClick={() => {
+                const content = allCorrections.map((c, i) => 
+                  `CORRECTION ${i+1}\n` +
+                  `Vous avez dit : ${c.originalSentence}\n` +
+                  `Correction : ${c.correctedSentence}\n` +
+                  `Explication : ${c.explanation}\n\n`
+                ).join('---\n\n');
+                const blob = new Blob([`CORRECTIONS - LinguaCompagnon\nSemaine ${week.id}\n\n${content}`], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `corrections-semaine-${week.id}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-2 px-3 py-1 bg-brand-green hover:bg-green-600 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Télécharger
+            </button>
+          </div>
+          <div className="space-y-3">
+            {allCorrections.map((correction, index) => (
+              <div key={index} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">#{index + 1}</span>
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500 line-through mb-1">{correction.originalSentence}</div>
+                    <div className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+                      <span className="text-brand-green">→</span>
+                      {correction.correctedSentence}
+                    </div>
+                    <p className="text-xs text-gray-600 italic">💡 {correction.explanation}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      </main>
 
-        <button
-          onClick={handleEndCall}
-          className="p-5 rounded-full bg-red-500 text-white hover:bg-red-600 hover:scale-110 transition-all shadow-lg"
-        >
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
-          </svg>
-        </button>
-      </div>
+      {/* Footer avec contrôles */}
+      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setIsMicMuted(!isMicMuted)}
+            disabled={connectionState !== ConnectionState.CONNECTED}
+            className={`p-4 rounded-full transition-all ${
+              isMicMuted 
+                ? 'bg-gray-200 text-gray-500 hover:bg-gray-300' 
+                : 'bg-brand-green text-white hover:bg-green-600 shadow-md'
+            } disabled:opacity-30 disabled:cursor-not-allowed`}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMicMuted ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </footer>
     </div>
   );
 };
