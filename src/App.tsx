@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
-import type { Chat } from '@google/genai';
-import type { ChatMessage } from './types';
-import { getSystemPrompt, getWeekThemes } from './services/geminiService';
-import ChatMessageComponent from './components/ChatMessage';
+import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveTutorOral from './components/LiveTutorOral';
-import { DownloadIcon, EndIcon, PhoneIcon, ChatBubbleLeftRightIcon } from './components/Icons';
+import { Chat } from '@google/genai';
+import { getSystemPrompt, initializeChat, getWeekThemes } from './services/geminiService';
+import './index.css';
 
 type ConversationMode = 'ecrit' | 'oral' | null;
 
-const App: React.FC = () => {
+type ChatMessage = { id: string; role: 'model' | 'user'; text: string; };
+
+function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(1);
@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const [conversationMode, setConversationMode] = useState<ConversationMode>(null);
   const [showModeSelector, setShowModeSelector] = useState(true);
   const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
-  const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
 
   const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,29 +31,24 @@ const App: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(scrollToBottom, [messages]);
-  
   useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+    };
+
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
     return () => {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
-      }
-    };
-  }, [currentWeek]);
-
-  useEffect(() => {
-    const getAndSetVoices = () => {
-      if (typeof window.speechSynthesis !== 'undefined') {
-        setVoices(window.speechSynthesis.getVoices());
-      }
-    };
-    if (typeof window.speechSynthesis !== 'undefined') {
-      window.speechSynthesis.addEventListener('voiceschanged', getAndSetVoices);
-      getAndSetVoices();
-    }
-    return () => {
-      if (typeof window.speechSynthesis !== 'undefined') {
-        window.speechSynthesis.removeEventListener('voiceschanged', getAndSetVoices);
       }
     };
   }, []);
@@ -78,29 +72,30 @@ const App: React.FC = () => {
       const initializeChat = () => {
         try {
           const apiKey = import.meta.env.VITE_API_KEY;
-          
           if (!apiKey) {
-            throw new Error("VITE_API_KEY environment variable not set. Please check your .env.local file.");
+            throw new Error('La clé API est manquante. Assurez-vous que VITE_API_KEY est définie dans .env.local.');
           }
-          const ai = new GoogleGenAI({ apiKey });
-          
-          setCurrentThemes(getWeekThemes(currentWeek));
-          const systemInstruction = getSystemPrompt(currentWeek);
-          
-          chatRef.current = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-              systemInstruction,
+
+          const systemPrompt = getSystemPrompt(currentWeek);
+          const chat = new Chat({
+            model: 'gemini-2.0-flash-exp',
+            systemInstruction: systemPrompt,
+            generationConfig: {
+              temperature: 1.2,
+              topP: 0.95,
+              topK: 40,
+              maxOutputTokens: 8192,
             },
           });
           
+          chatRef.current = chat;
           sendWelcomeMessage();
-
-        } catch (e) {
-          console.error(e);
-          setError(e instanceof Error ? e.message : 'An unknown error occurred during initialization.');
+        } catch (error) {
+          console.error('Error initializing chat:', error);
+          setError('Impossible d\'initialiser le chat. Vérifiez votre connexion et rechargez la page.');
         }
       };
+
       initializeChat();
     }
   }, [currentWeek, conversationMode]);
@@ -112,11 +107,9 @@ const App: React.FC = () => {
   const handleModeSelect = (mode: ConversationMode) => {
     setConversationMode(mode);
     if (mode === 'oral') {
-      // Pour le mode oral, afficher d'abord le sélecteur de semaine
       setShowModeSelector(false);
       setShowOralWeekSelector(true);
     } else {
-      // Pour le mode écrit, démarrer directement
       setShowModeSelector(false);
       setShowOralWeekSelector(false);
     }
@@ -135,7 +128,6 @@ const App: React.FC = () => {
   const handleOralWeekSelect = (week: number) => {
     setCurrentWeek(week);
     setShowOralWeekSelector(false);
-    // Le mode oral va démarrer avec la semaine sélectionnée
   };
   
   const handleDownload = () => {
@@ -143,121 +135,101 @@ const App: React.FC = () => {
     const header = `Conversation - LinguaCompagnon - Semaine ${currentWeek}\n=========================================\n\n`;
     const formatted = messages.map(msg => {
       const prefix = msg.role === 'user' ? 'Apprenant' : 'LinguaCompagnon';
-      return `${prefix}:\n${msg.text}\n`;
-    }).join('\n-----------------------------------------\n\n');
-    
-    const content = header + formatted;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      return `${prefix}: ${msg.text}`;
+    }).join('\n\n');
+    const blob = new Blob([header + formatted], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `linguacompagnon-semaine-${currentWeek}.txt`;
+    a.download = `conversation-semaine-${currentWeek}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const handleEnd = () => {
-    if (messages.length === 0 && conversationMode !== 'oral') return;
-    if (window.confirm('Voulez-vous vraiment terminer et revenir au choix du mode ?')) {
-      handleBackToModeSelector();
-    }
-  };
-
-  const handlePractice = (messageId: string) => {
-    console.log('🎯 Bouton "Je veux pratiquer" cliqué pour le message:', messageId);
-    handleSendMessage("C'est noté. Pourriez-vous me donner un exercice de 5 phrases pour pratiquer ce point de grammaire ou de conjugaison ?");
-  };
-
   const handleSpeak = (text: string, messageId: string) => {
-    if (typeof window.speechSynthesis === 'undefined') {
-      setError('Votre navigateur ne supporte pas la synthèse vocale.');
-      return;
-    }
-    if (speakingMessageId === messageId) {
+    if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
       setSpeakingMessageId(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    
-    const cleanText = text.replace(/\*\*/g, '');
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'fr-FR';
-    
-    const frenchVoices = voices.filter(voice => voice.lang === 'fr-FR');
-    if (frenchVoices.length > 0) {
-      const preferredVoice = 
-        frenchVoices.find(voice => voice.name.includes('Google')) || 
-        frenchVoices.find(voice => voice.localService) ||
-        frenchVoices[0];
-      utterance.voice = preferredVoice;
+    const utterance = new SpeechSynthesisUtterance(text);
+    const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
+    if (frenchVoice) {
+      utterance.voice = frenchVoice;
     }
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
 
     utterance.onstart = () => setSpeakingMessageId(messageId);
     utterance.onend = () => setSpeakingMessageId(null);
-    utterance.onerror = (e) => {
-        console.error("Speech synthesis error", e);
-        setSpeakingMessageId(null);
-    };
+    utterance.onerror = () => setSpeakingMessageId(null);
+
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSendMessage = async (text: string) => {
-    if (!chatRef.current) {
-        setError("Chat is not initialized.");
-        return;
-    }
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || !chatRef.current) return;
 
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text: text.trim(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
-
-    const modelMessage: ChatMessage = { id: `model-${Date.now()}`, role: 'model', text: '' };
-    setMessages((prevMessages) => [...prevMessages, modelMessage]);
+    setError(null);
 
     try {
-      const result = await chatRef.current.sendMessageStream({ message: text });
-      
-      let streamedText = '';
-      for await (const chunk of result) {
-        streamedText += chunk.text;
-        
-        let displayText = streamedText;
-        let currentHasPractice = false;
+      const result = await chatRef.current.sendMessage(text);
+      const responseText = result.text();
 
-        if (displayText.includes('[PRATIQUE]')) {
-          displayText = displayText.replace('[PRATIQUE]', '').trim();
-          currentHasPractice = true;
+      if (responseText.includes('[PRATIQUE]')) {
+        const parts = responseText.split('[PRATIQUE]');
+        const beforePractice = parts[0].trim();
+        const practiceContent = parts.slice(1).join('[PRATIQUE]').trim();
+
+        if (beforePractice) {
+          const responseMessageBefore: ChatMessage = {
+            id: `model-${Date.now()}`,
+            role: 'model',
+            text: beforePractice,
+          };
+          setMessages((prev) => [...prev, responseMessageBefore]);
         }
-        
-        setMessages((prevMessages) => {
-          const newMessages = [...prevMessages];
-          if (newMessages.length > 0) {
-              const lastMessage = newMessages[newMessages.length - 1];
-              newMessages[newMessages.length - 1] = { 
-                ...lastMessage, 
-                text: displayText,
-                hasPractice: currentHasPractice 
-              };
-          }
-          return newMessages;
-        });
-      }
 
+        if (practiceContent) {
+          setTimeout(() => {
+            const practiceMessage: ChatMessage = {
+              id: `model-practice-${Date.now()}`,
+              role: 'model',
+              text: `[PRATIQUE]${practiceContent}`,
+            };
+            setMessages((prev) => [...prev, practiceMessage]);
+          }, 500);
+        }
+      } else {
+        const responseMessage: ChatMessage = {
+          id: `model-${Date.now()}`,
+          role: 'model',
+          text: responseText,
+        };
+        setMessages((prev) => [...prev, responseMessage]);
+      }
     } catch (e) {
       console.error(e);
-      const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer. Si le problème persiste, contactez votre enseignante.";
-      setMessages((prevMessages) => {
-          const newMessages = [...prevMessages];
-          if (newMessages.length > 0) {
-            const lastMessage = newMessages[newMessages.length - 1];
-            newMessages[newMessages.length - 1] = { ...lastMessage, text: errorMessage };
-          }
-          return newMessages;
+      const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer.";
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        if (newMessages.length > 0) {
+          const lastMessage = newMessages[newMessages.length - 1];
+          newMessages[newMessages.length - 1] = { ...lastMessage, text: errorMessage };
+        }
+        return newMessages;
       });
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');
     } finally {
@@ -269,11 +241,16 @@ const App: React.FC = () => {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
         <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-800">
-              Lingua<span className="text-brand-green">Compagnon</span>
-            </h1>
-            <WeekSelector currentWeek={currentWeek} onWeekChange={handleWeekChange} />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              LC
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                Lingua<span className="text-brand-green">Compagnon</span>
+              </h1>
+              <p className="text-xs text-gray-500">Votre partenaire conversationnel</p>
+            </div>
           </div>
         </header>
 
@@ -313,29 +290,26 @@ const App: React.FC = () => {
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
             >
               <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
-                <PhoneIcon className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" />
+                <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Oral</h3>
               <p className="text-gray-600 text-center mb-4">
-                Conversation vocale en temps réel avec votre tuteur IA
+                Conversation vocale naturelle avec François, votre tuteur IA
               </p>
               <ul className="text-sm text-gray-500 space-y-2 text-left">
-                <li>✓ Dialogue naturel</li>
-                <li>✓ Pratique orale immersive</li>
-                <li>✓ Voix IA haute qualité</li>
+                <li>✓ Interaction vocale fluide</li>
+                <li>✓ Corrections en temps réel</li>
+                <li>✓ Pratique de la prononciation</li>
               </ul>
             </button>
           </div>
-
-          <p className="mt-8 text-sm text-gray-500">
-            💡 Astuce : Alternez entre les deux modes pour une pratique complète !
-          </p>
         </main>
       </div>
     );
   }
 
-  // Écran de sélection de semaine pour le mode oral
   if (showOralWeekSelector && conversationMode === 'oral') {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
@@ -434,37 +408,62 @@ const App: React.FC = () => {
             <p className="text-sm text-gray-600 flex-grow">
                 <span className="font-semibold text-gray-900">Objectifs :</span> {currentThemes}
             </p>
-            <div className="flex items-center gap-2">
-                <button onClick={handleDownload} aria-label="Télécharger la conversation" className="p-2 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"><DownloadIcon className="w-5 h-5"/></button>
-                <button onClick={handleEnd} aria-label="Terminer la conversation" className="p-2 rounded-md text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors"><EndIcon className="w-5 h-5"/></button>
-            </div>
+            <button
+              onClick={handleBackToModeSelector}
+              className="ml-4 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+            >
+              ← Changer de mode
+            </button>
         </div>
       </header>
-      
-      <main className="flex-grow overflow-y-auto p-4 bg-gray-50">
-         {error && <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg" role="alert">
-            <span className="font-medium">Erreur :</span> {error}
-          </div>}
 
-        <div className="flex flex-col">
+      <main className="flex-grow overflow-y-auto p-4 bg-gray-50">
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
           {messages.map((msg) => (
-            <ChatMessageComponent 
-              key={msg.id} 
-              message={msg}
-              onSpeak={handleSpeak}
-              onPractice={handlePractice}
+            <ChatMessage
+              key={msg.id}
+              role={msg.role}
+              text={msg.text}
+              onSpeak={() => handleSpeak(msg.text, msg.id)}
               isSpeaking={speakingMessageId === msg.id}
             />
           ))}
-           <div ref={messagesEndRef} />
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-3xl bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
       </main>
-      
-      <footer className="sticky bottom-0 z-10">
-        <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+
+      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <ChatInput onSend={sendMessage} disabled={isLoading} />
+          <button
+            onClick={handleDownload}
+            disabled={messages.length === 0}
+            className="px-4 py-2 bg-brand-green hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed whitespace-nowrap text-sm"
+            title="Télécharger la conversation"
+          >
+            ⬇️ Télécharger
+          </button>
+        </div>
       </footer>
     </div>
   );
-};
+}
 
 export default App;
