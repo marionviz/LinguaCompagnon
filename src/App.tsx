@@ -103,17 +103,7 @@ function App() {
           // ═══════════════════════════════════════════════════════════════
           
           const model = genAI.getGenerativeModel({
-            // OPTION 1 : Essayez gemini-pro (devrait marcher)
-            model: 'gemini-pro',
-            
-            // OPTION 2 : Si gemini-pro ne marche pas, essayez :
-            // model: 'models/gemini-pro',
-            
-            // OPTION 3 : Après mise à jour du package, essayez :
-            // model: 'gemini-1.5-flash',
-            
-            // OPTION 4 : Version avec préfixe models/ :
-            // model: 'models/gemini-1.5-flash',
+            model: 'models/gemini-pro',
             
             systemInstruction: systemPrompt,
             generationConfig: {
