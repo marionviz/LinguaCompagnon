@@ -67,7 +67,7 @@ function App() {
         const firstMessage: ChatMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: `Bonjour ! Je suis votre partenaire conversationnel. Mon objectif est de vous aider à mettre en application ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
+            text: `Bonjour ! Je suis votre partenaire conversationnel. Mon objectif est de pratiquer ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Comment allez-vous aujourd'hui ?`,
         };
         setMessages([firstMessage]);
         setIsLoading(false);
