@@ -3,8 +3,8 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveTutorOral from './components/LiveTutorOral';
-import { Chat } from '@google/genai';
-import { getSystemPrompt, initializeChat, getWeekThemes } from './services/geminiService';
+import { GoogleGenAI } from '@google/genai';
+import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import './index.css';
 
 type ConversationMode = 'ecrit' | 'oral' | null;
@@ -24,7 +24,7 @@ function App() {
   const [showModeSelector, setShowModeSelector] = useState(true);
   const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
 
-  const chatRef = useRef<Chat | null>(null);
+  const chatRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const scrollToBottom = () => {
@@ -69,15 +69,17 @@ function App() {
 
   useEffect(() => {
     if (conversationMode === 'ecrit') {
-      const initializeChat = () => {
+      const initializeChat = async () => {
         try {
           const apiKey = import.meta.env.VITE_API_KEY;
           if (!apiKey) {
             throw new Error('La clé API est manquante. Assurez-vous que VITE_API_KEY est définie dans .env.local.');
           }
 
+          const ai = new GoogleGenAI({ apiKey });
           const systemPrompt = getSystemPrompt(currentWeek);
-          const chat = new Chat({
+          
+          const chat = ai.startChat({
             model: 'gemini-2.0-flash-exp',
             systemInstruction: systemPrompt,
             generationConfig: {
