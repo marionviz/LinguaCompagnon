@@ -1,3 +1,6 @@
+// Version App.tsx avec TOUS les modèles possibles
+// Décommentez celui qui fonctionne après avoir mis à jour le package
+
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -67,7 +70,7 @@ function App() {
         const firstMessage: ChatMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: `Bonjour ! Je suis votre partenaire conversationnel. Mon objectif est de pratiquer ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Comment allez-vous aujourd'hui ?`,
+            text: `Bonjour ! Je suis votre partenaire conversationnel. Mon objectif est de vous aider à mettre en application ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
         };
         setMessages([firstMessage]);
         setIsLoading(false);
@@ -94,8 +97,24 @@ function App() {
           const systemPrompt = getSystemPrompt(currentWeek);
           
           console.log('🧠 Création du modèle...');
+          
+          // ═══════════════════════════════════════════════════════════════
+          // 🎯 ESSAYEZ CES MODÈLES DANS L'ORDRE (UN SEUL À LA FOIS)
+          // ═══════════════════════════════════════════════════════════════
+          
           const model = genAI.getGenerativeModel({
+            // OPTION 1 : Essayez gemini-pro (devrait marcher)
             model: 'gemini-pro',
+            
+            // OPTION 2 : Si gemini-pro ne marche pas, essayez :
+            // model: 'models/gemini-pro',
+            
+            // OPTION 3 : Après mise à jour du package, essayez :
+            // model: 'gemini-1.5-flash',
+            
+            // OPTION 4 : Version avec préfixe models/ :
+            // model: 'models/gemini-1.5-flash',
+            
             systemInstruction: systemPrompt,
             generationConfig: {
               temperature: 1.2,
@@ -115,7 +134,7 @@ function App() {
           sendWelcomeMessage();
         } catch (error) {
           console.error('❌ Erreur initialisation chat:', error);
-          setError('Impossible d\'initialiser le chat. Vérifiez votre connexion et rechargez la page.');
+          setError(`Impossible d'initialiser le chat: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
           initializingRef.current = false;
         }
       };
@@ -149,6 +168,7 @@ function App() {
     setShowOralWeekSelector(false);
     setMessages([]);
     initializingRef.current = false;
+    chatRef.current = null;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -245,6 +265,7 @@ function App() {
               id: `model-practice-${Date.now()}`,
               role: 'model',
               text: `[PRATIQUE]${practiceContent}`,
+              hasPractice: true,
             };
             setMessages((prev) => [...prev, practiceMessage]);
           }, 500);
@@ -260,15 +281,13 @@ function App() {
     } catch (e) {
       console.error('❌ Erreur sendMessage:', e);
       const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer.";
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        if (newMessages.length > 0) {
-          const lastMessage = newMessages[newMessages.length - 1];
-          newMessages[newMessages.length - 1] = { ...lastMessage, text: errorMessage };
-        }
-        return newMessages;
-      });
-      setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      const errorMsg: ChatMessage = {
+        id: `model-error-${Date.now()}`,
+        role: 'model',
+        text: errorMessage,
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -459,7 +478,9 @@ function App() {
       <main className="flex-grow overflow-y-auto p-4 bg-gray-50">
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+            <p className="font-bold">Erreur :</p>
+            <p className="text-sm">{error}</p>
+            <p className="text-xs mt-2">Vérifiez la console (F12) pour plus de détails.</p>
           </div>
         )}
 
