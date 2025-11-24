@@ -26,6 +26,7 @@ function App() {
 
   const chatRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializingRef = useRef(false);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,6 +55,7 @@ function App() {
   }, []);
 
   const sendWelcomeMessage = () => {
+    console.log('📨 Envoi message bienvenue...');
     setIsLoading(true);
     setMessages([]);
     setTimeout(() => {
@@ -64,21 +66,29 @@ function App() {
         };
         setMessages([firstMessage]);
         setIsLoading(false);
+        console.log('✅ Message bienvenue envoyé');
     }, 500);
   };
 
   useEffect(() => {
-    if (conversationMode === 'ecrit') {
+    if (conversationMode === 'ecrit' && !initializingRef.current) {
+      initializingRef.current = true;
+      console.log('🚀 Initialisation du chat mode écrit...');
+      
       const initializeChat = async () => {
         try {
           const apiKey = import.meta.env.VITE_API_KEY;
+          console.log('🔑 API Key:', apiKey ? 'présente' : 'MANQUANTE');
+          
           if (!apiKey) {
             throw new Error('La clé API est manquante. Assurez-vous que VITE_API_KEY est définie dans .env.local.');
           }
 
+          console.log('🤖 Création GoogleGenerativeAI...');
           const genAI = new GoogleGenerativeAI(apiKey);
           const systemPrompt = getSystemPrompt(currentWeek);
           
+          console.log('🧠 Création du modèle...');
           const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
             systemInstruction: systemPrompt,
@@ -90,27 +100,33 @@ function App() {
             },
           });
           
+          console.log('💬 Démarrage du chat...');
           const chat = model.startChat({
             history: [],
           });
           
           chatRef.current = chat;
+          console.log('✅ Chat initialisé avec succès');
           sendWelcomeMessage();
         } catch (error) {
-          console.error('Error initializing chat:', error);
+          console.error('❌ Erreur initialisation chat:', error);
           setError('Impossible d\'initialiser le chat. Vérifiez votre connexion et rechargez la page.');
+          initializingRef.current = false;
         }
       };
 
       initializeChat();
     }
-  }, [currentWeek, conversationMode]);
+  }, [conversationMode]);
   
   const handleWeekChange = (week: number) => {
+    console.log('📅 Changement semaine:', week);
     setCurrentWeek(week);
+    setCurrentThemes(getWeekThemes(week));
   };
 
   const handleModeSelect = (mode: ConversationMode) => {
+    console.log('🎯 Sélection mode:', mode);
     setConversationMode(mode);
     if (mode === 'oral') {
       setShowModeSelector(false);
@@ -122,16 +138,19 @@ function App() {
   };
 
   const handleBackToModeSelector = () => {
+    console.log('⬅️ Retour au sélecteur de mode');
     setConversationMode(null);
     setShowModeSelector(true);
     setShowOralWeekSelector(false);
     setMessages([]);
+    initializingRef.current = false;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
 
   const handleOralWeekSelect = (week: number) => {
+    console.log('🎤 Sélection semaine oral:', week);
     setCurrentWeek(week);
     setShowOralWeekSelector(false);
   };
@@ -178,8 +197,13 @@ function App() {
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || !chatRef.current) return;
+    if (!text.trim() || !chatRef.current) {
+      console.warn('⚠️ Pas de texte ou chat non initialisé');
+      return;
+    }
 
+    console.log('📤 Envoi message:', text.substring(0, 50) + '...');
+    
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -191,8 +215,10 @@ function App() {
     setError(null);
 
     try {
+      console.log('⏳ Attente réponse Gemini...');
       const result = await chatRef.current.sendMessage(text);
-      const responseText = result.text();
+      const responseText = result.response.text();
+      console.log('✅ Réponse reçue:', responseText.substring(0, 50) + '...');
 
       if (responseText.includes('[PRATIQUE]')) {
         const parts = responseText.split('[PRATIQUE]');
@@ -227,7 +253,7 @@ function App() {
         setMessages((prev) => [...prev, responseMessage]);
       }
     } catch (e) {
-      console.error(e);
+      console.error('❌ Erreur sendMessage:', e);
       const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer.";
       setMessages((prev) => {
         const newMessages = [...prev];
@@ -242,6 +268,8 @@ function App() {
       setIsLoading(false);
     }
   };
+
+  console.log('🎨 Rendu App - mode:', conversationMode, 'selector:', showModeSelector);
 
   if (showModeSelector) {
     return (
