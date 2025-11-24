@@ -9,7 +9,12 @@ import './index.css';
 
 type ConversationMode = 'ecrit' | 'oral' | null;
 
-type ChatMessage = { id: string; role: 'model' | 'user'; text: string; };
+type ChatMessage = { 
+  id: string; 
+  role: 'model' | 'user'; 
+  text: string;
+  hasPractice?: boolean;
+};
 
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -462,9 +467,9 @@ function App() {
           {messages.map((msg) => (
             <ChatMessage
               key={msg.id}
-              role={msg.role}
-              text={msg.text}
-              onSpeak={() => handleSpeak(msg.text, msg.id)}
+              message={msg}
+              onSpeak={handleSpeak}
+              onPractice={(messageId) => console.log('Practice:', messageId)}
               isSpeaking={speakingMessageId === msg.id}
             />
           ))}
@@ -485,7 +490,7 @@ function App() {
 
       <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
         <div className="flex items-center gap-2 mb-2">
-          <ChatInput onSend={sendMessage} disabled={isLoading} />
+          <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
           <button
             onClick={handleDownload}
             disabled={messages.length === 0}
