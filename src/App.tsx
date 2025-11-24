@@ -3,7 +3,7 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveTutorOral from './components/LiveTutorOral';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import './index.css';
 
@@ -76,10 +76,10 @@ function App() {
             throw new Error('La clé API est manquante. Assurez-vous que VITE_API_KEY est définie dans .env.local.');
           }
 
-          const ai = new GoogleGenAI({ apiKey });
+          const genAI = new GoogleGenerativeAI(apiKey);
           const systemPrompt = getSystemPrompt(currentWeek);
           
-          const chat = ai.startChat({
+          const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
             systemInstruction: systemPrompt,
             generationConfig: {
@@ -88,6 +88,10 @@ function App() {
               topK: 40,
               maxOutputTokens: 8192,
             },
+          });
+          
+          const chat = model.startChat({
+            history: [],
           });
           
           chatRef.current = chat;
