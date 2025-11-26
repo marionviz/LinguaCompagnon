@@ -1,6 +1,3 @@
-// Version App.tsx avec TOUS les modèles possibles
-// Décommentez celui qui fonctionne après avoir mis à jour le package
-
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -482,7 +479,7 @@ function App() {
             </p>
             <button
               onClick={handleBackToModeSelector}
-              className="ml-4 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+              className="ml-4 px-3 py-1 text-sm text-gray-700 hover:text-gray-900 border border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors whitespace-nowrap"
             >
               ← Changer de mode
             </button>
@@ -524,15 +521,20 @@ function App() {
       </main>
 
       <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+        <div className="flex items-center gap-2">
+          <div className="flex-grow">
+            <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+          </div>
           <button
             onClick={handleDownload}
             disabled={messages.length === 0}
-            className="px-4 py-2 bg-brand-green hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed whitespace-nowrap text-sm"
+            className="flex-shrink-0 w-12 h-12 bg-brand-green hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center"
             title="Télécharger la conversation"
+            aria-label="Télécharger la conversation"
           >
-            Télécharger
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
           </button>
         </div>
       </footer>
