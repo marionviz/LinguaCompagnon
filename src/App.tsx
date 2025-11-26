@@ -1,6 +1,3 @@
-// Version App.tsx avec TOUS les modèles possibles
-// Décommentez celui qui fonctionne après avoir mis à jour le package
-
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -99,7 +96,7 @@ function App() {
           console.log('🧠 Création du modèle...');
           
           const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',
             
             systemInstruction: systemPrompt,
             generationConfig: {
