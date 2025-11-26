@@ -532,7 +532,7 @@ function App() {
             className="px-4 py-2 bg-brand-green hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed whitespace-nowrap text-sm"
             title="Télécharger la conversation"
           >
-            ⬇️ Télécharger
+            Télécharger
           </button>
         </div>
       </footer>
