@@ -1,3 +1,6 @@
+// Version App.tsx avec TOUS les modèles possibles
+// Décommentez celui qui fonctionne après avoir mis à jour le package
+
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -126,10 +129,56 @@ function App() {
     }
   }, [conversationMode]);
   
-  const handleWeekChange = (week: number) => {
+  const handleWeekChange = async (week: number) => {
     console.log('📅 Changement semaine:', week);
     setCurrentWeek(week);
     setCurrentThemes(getWeekThemes(week));
+    
+    // Réinitialiser le chat avec la nouvelle semaine
+    setMessages([]);
+    setIsLoading(true);
+    
+    try {
+      const apiKey = import.meta.env.VITE_API_KEY;
+      if (!apiKey) {
+        throw new Error('La clé API est manquante.');
+      }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const systemPrompt = getSystemPrompt(week);
+      
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        systemInstruction: systemPrompt,
+        generationConfig: {
+          temperature: 1.2,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192,
+        },
+      });
+      
+      const chat = model.startChat({
+        history: [],
+      });
+      
+      chatRef.current = chat;
+      
+      // Envoyer le message de bienvenue avec la bonne semaine
+      setTimeout(() => {
+        const welcomeMessage: ChatMessage = {
+          id: `model-${Date.now()}`,
+          role: 'model',
+          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en appliquant ce que vous apprenez en cours. Nous sommes en semaine ${week}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
+        };
+        setMessages([welcomeMessage]);
+        setIsLoading(false);
+      }, 500);
+    } catch (error) {
+      console.error('❌ Erreur réinitialisation chat:', error);
+      setError(`Impossible de changer de semaine: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      setIsLoading(false);
+    }
   };
 
   const handleModeSelect = (mode: ConversationMode) => {
@@ -283,11 +332,8 @@ function App() {
         <main className="flex-grow flex flex-col items-center justify-center p-8 bg-gray-50">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Comment souhaitez-vous pratiquer ?
+              Que voulez-vous pratiquer aujourd'hui ?
             </h2>
-            <p className="text-gray-600 text-lg">
-              Semaine {currentWeek} : {currentThemes}
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
