@@ -229,30 +229,15 @@ function App() {
       console.log('✅ Réponse reçue:', responseText.substring(0, 50) + '...');
 
       if (responseText.includes('[PRATIQUE]')) {
-        const parts = responseText.split('[PRATIQUE]');
-        const beforePractice = parts[0].trim();
-        const practiceContent = parts.slice(1).join('[PRATIQUE]').trim();
-
-        if (beforePractice) {
-          const responseMessageBefore: ChatMessage = {
-            id: `model-${Date.now()}`,
-            role: 'model',
-            text: beforePractice,
-          };
-          setMessages((prev) => [...prev, responseMessageBefore]);
-        }
-
-        if (practiceContent) {
-          setTimeout(() => {
-            const practiceMessage: ChatMessage = {
-              id: `model-practice-${Date.now()}`,
-              role: 'model',
-              text: `[PRATIQUE]${practiceContent}`,
-              hasPractice: true,
-            };
-            setMessages((prev) => [...prev, practiceMessage]);
-          }, 500);
-        }
+        const cleanText = responseText.replace(/\[PRATIQUE\]/g, '').trim();
+        
+        const responseMessage: ChatMessage = {
+          id: `model-${Date.now()}`,
+          role: 'model',
+          text: cleanText,
+          hasPractice: true,
+        };
+        setMessages((prev) => [...prev, responseMessage]);
       } else {
         const responseMessage: ChatMessage = {
           id: `model-${Date.now()}`,
@@ -473,7 +458,7 @@ function App() {
               key={msg.id}
               message={msg}
               onSpeak={handleSpeak}
-              onPractice={(messageId) => console.log('Practice:', messageId)}
+              onPractice={() => sendMessage("Je veux pratiquer")}
               isSpeaking={speakingMessageId === msg.id}
             />
           ))}
