@@ -70,3 +70,9 @@ export const ChatBubbleLeftRightIcon: React.FC<{ className?: string }> = ({ clas
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.18.063-2.1 1.04-2.1 2.22v4.286c0 1.18.92 2.158 2.1 2.22.182.009.363.018.545.025m-12.66-3.17l3-3a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-.414-.336-.75-.75-.75h-3.75c-.414 0-.75.336-.75.75v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
   </svg>
 );
+
+export const BookOpen: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+  </svg>
+);

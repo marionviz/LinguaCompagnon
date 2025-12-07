@@ -3,6 +3,7 @@ import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } f
 import { ConnectionState, Correction } from '../typesOral';
 import { createPCM16Blob, base64ToBytes, decodeAudioData } from '../utils/audioUtilsLive';
 import { GEMINI_MODEL_LIVE, getOralWeekConfig } from '../constantsOral';
+import { useToolBox } from '../hooks/useToolBox';
 
 interface LiveTutorOralProps {
   weekNumber: number;
@@ -43,6 +44,12 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [lastCorrection, setLastCorrection] = useState<Correction | null>(null);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
+  
+  // ✅ NOUVEAU : État pour notification ajout Boîte à Outils
+  const [showToolboxNotification, setShowToolboxNotification] = useState(false);
+
+  // ✅ NOUVEAU : Hook pour gérer la Boîte à Outils
+  const { addItem } = useToolBox();
 
   // Refs pour gestion audio
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
@@ -55,6 +62,44 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // ✅ NOUVEAU : Fonction pour catégoriser et ajouter à la Boîte à Outils
+  const addCorrectionToToolbox = useCallback((correction: Correction) => {
+    // Déterminer la catégorie automatiquement
+    let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
+    
+    const explanation = correction.explanation.toLowerCase();
+    
+    if (explanation.includes('conjugaison') || explanation.includes('temps') || 
+        explanation.includes('passé composé') || explanation.includes('imparfait') ||
+        explanation.includes('présent') || explanation.includes('futur')) {
+      category = 'conjugation';
+    } else if (explanation.includes('vocabulaire') || explanation.includes('mot') || 
+               explanation.includes('expression')) {
+      category = 'vocabulary';
+    } else if (explanation.includes('prononciation') || explanation.includes('son') ||
+               explanation.includes('accent')) {
+      category = 'pronunciation';
+    }
+
+    // Créer un titre court pour la Boîte à Outils
+    const title = correction.explanation.length > 50 
+      ? correction.explanation.substring(0, 50) + '...'
+      : correction.explanation;
+
+    // Ajouter à la Boîte à Outils
+    addItem({
+      category,
+      title,
+      description: correction.explanation,
+      example: `❌ ${correction.originalSentence}\n✅ ${correction.correctedSentence}`,
+      errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
+    });
+
+    // Afficher la notification
+    setShowToolboxNotification(true);
+    setTimeout(() => setShowToolboxNotification(false), 3000);
+  }, [addItem, weekNumber]);
 
   const stopAudioProcessing = useCallback(() => {
     sourcesRef.current.forEach(source => {
@@ -165,151 +210,156 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                  const call = functionCalls[0];
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
+                   console.log("📝 Correction reçue:", correctionData);
                    setLastCorrection(correctionData);
                    setAllCorrections(prev => [...prev, correctionData]);
                    
-                   // Acquitter le tool call
+                   // ✅ NOUVEAU : Ajouter automatiquement à la Boîte à Outils
+                   addCorrectionToToolbox(correctionData);
+
+                   // Envoyer confirmation au modèle
                    if (sessionPromiseRef.current) {
                      sessionPromiseRef.current.then(session => {
-                       session.sendToolResponse({
-                         functionResponses: [{
-                           id: call.id,
-                           name: call.name,
-                           response: { result: "Correction affichée." }
-                         }]
+                       session.send({
+                         toolResponse: {
+                           functionResponses: [{
+                             name: 'displayCorrection',
+                             response: { success: true }
+                           }]
+                         }
                        });
-                     });
+                     }).catch(console.error);
                    }
                  }
                }
             }
 
-            // Gérer l'audio en sortie
-            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (audioData && outputCtx) {
-              setIsAiSpeaking(true);
-              const bytes = base64ToBytes(audioData);
-              const buffer = await decodeAudioData(bytes, outputCtx, 24000, 1);
-              
-              const source = outputCtx.createBufferSource();
-              source.buffer = buffer;
-              source.connect(outputNode);
-
-              const currentTime = outputCtx.currentTime;
-              if (nextStartTimeRef.current < currentTime) {
-                nextStartTimeRef.current = currentTime;
+            // Gérer les réponses audio
+            if (message.serverContent?.modelTurn?.parts) {
+              for (const part of message.serverContent.modelTurn.parts) {
+                if (part.inlineData?.mimeType?.startsWith("audio/")) {
+                  const audioData = base64ToBytes(part.inlineData.data);
+                  try {
+                    const audioBuffer = await decodeAudioData(outputCtx, audioData.buffer);
+                    const source = outputCtx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(outputNode);
+                    
+                    const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
+                    source.start(startTime);
+                    nextStartTimeRef.current = startTime + audioBuffer.duration;
+                    
+                    sourcesRef.current.add(source);
+                    
+                    setIsAiSpeaking(true);
+                    source.onended = () => {
+                      sourcesRef.current.delete(source);
+                      if (sourcesRef.current.size === 0) {
+                        setIsAiSpeaking(false);
+                      }
+                    };
+                  } catch (err) {
+                    console.error("❌ Erreur décodage audio:", err);
+                  }
+                }
               }
-
-              source.start(nextStartTimeRef.current);
-              nextStartTimeRef.current += buffer.duration;
-
-              sourcesRef.current.add(source);
-              source.onended = () => {
-                sourcesRef.current.delete(source);
-                if (sourcesRef.current.size === 0) setIsAiSpeaking(false);
-              };
             }
-
-            // Gérer les interruptions
-            if (message.serverContent?.interrupted) {
-              sourcesRef.current.forEach(s => s.stop());
-              sourcesRef.current.clear();
-              nextStartTimeRef.current = 0;
-              setIsAiSpeaking(false);
-            }
-
-            // Gérer la fin du tour
-            if (message.serverContent?.turnComplete) {
-              setIsAiSpeaking(false);
-            }
+          },
+          onerror: (error: any) => {
+            console.error("❌ Erreur Live API:", error);
+            setConnectionState(ConnectionState.ERROR);
+            setErrorMsg(error.message || "Erreur de connexion");
           },
           onclose: () => {
-            console.log("❌ Connexion Live API fermée");
+            console.log("🔌 Connexion fermée");
+            stopAudioProcessing();
             setConnectionState(ConnectionState.DISCONNECTED);
           },
-          onerror: (err: any) => {
-            console.error("❌ Erreur Live API:", err);
-            setConnectionState(ConnectionState.ERROR);
-            setErrorMsg("Erreur de connexion.");
+        },
+        systemInstruction: {
+          parts: [{ text: week.systemPrompt }]
+        },
+        generationConfig: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
           }
         },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          tools: [{ functionDeclarations: [correctionTool] }],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
-          },
-          systemInstruction: `
-            Tu es LinguaCompagnon en mode oral, le tuteur conversationnel de français.
-            
-            SEMAINE ${week.id}: ${week.title}
-            OBJECTIF: ${week.objective}
-            VOCABULAIRE: ${week.vocabulary.join(", ")}
-            GRAMMAIRE: ${week.grammar.join(", ")}
-
-            RÈGLES CRUCIALES :
-            1. **DÉMARRAGE IMMÉDIAT** : Dès le premier signal, salue brièvement et pose directement la première question.
-               Exemple : "Bonjour ! Cette semaine nous parlons de ${week.topics[0]}. ${week.objective.split('.')[0]}."
-            
-            2. **FEEDBACK ORAL COURT** : Quand l'utilisateur fait une erreur, ne l'interromps pas avec une longue explication.
-               Dis : "Attention à ça..." ou "Je t'ai mis une note" et reformule correctement.
-            
-            3. **FEEDBACK ÉCRIT VIA OUTIL** : Utilise \`displayCorrection\` pour les erreurs importantes.
-            
-            4. **STYLE** : Bienveillant, encourageant, dynamique. Parle à 95% en français. Utilise le vouvoiement.
-            
-            5. **CORRECTIONS FORMATIVES** : Structure tes corrections orales : Correction → Explication brève → Encouragement.
-          `
-        }
+        tools: [{ functionDeclarations: [correctionTool] }]
       };
 
+      console.log("🚀 Démarrage session Live API avec outil correction");
       sessionPromiseRef.current = ai.live.connect(config);
       
-    } catch (err: any) {
-      console.error("❌ Erreur initialisation:", err);
+      await sessionPromiseRef.current;
+      
+    } catch (error) {
+      console.error("❌ Erreur startSession:", error);
       setConnectionState(ConnectionState.ERROR);
-      setErrorMsg("Impossible d'initialiser la session.");
+      setErrorMsg(error instanceof Error ? error.message : "Erreur inconnue");
       stopAudioProcessing();
     }
   };
 
-  useEffect(() => {
-    return () => stopAudioProcessing();
+  const endSession = useCallback(() => {
+    console.log("🔚 Arrêt manuel de la session");
+    if (sessionPromiseRef.current) {
+      sessionPromiseRef.current.then(session => {
+        try {
+          session.disconnect();
+        } catch (e) {
+          console.error("Erreur disconnect:", e);
+        }
+      }).catch(console.error);
+      sessionPromiseRef.current = null;
+    }
+    stopAudioProcessing();
+    setConnectionState(ConnectionState.DISCONNECTED);
+    setIsAiSpeaking(false);
   }, [stopAudioProcessing]);
 
   useEffect(() => {
-    if (connectionState === ConnectionState.CONNECTED) updateVolume();
-    return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
-  }, [connectionState]);
-
-  const handleEndCall = () => {
-    stopAudioProcessing();
-    if (sessionPromiseRef.current) {
-      sessionPromiseRef.current.then(session => (session as any).close?.()).catch(() => {});
-    }
-    onClose();
-  };
+    return () => {
+      endSession();
+    };
+  }, [endSession]);
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
-      
-      {/* Header comme le mode écrit */}
-      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white relative overflow-hidden">
+      {/* ✅ NOUVEAU : Notification ajout Boîte à Outils */}
+      {showToolboxNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span className="font-medium">Ajouté à votre boîte à outils !</span>
+        </div>
+      )}
+
+      {/* Fond animé */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-brand-green rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-green/50">
               LC
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">
+              <h1 className="text-xl font-bold">
                 Lingua<span className="text-brand-green">Compagnon</span>
               </h1>
-              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
+              <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
             </div>
           </div>
-          <button
-            onClick={handleEndCall}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+          <button 
+            onClick={() => { endSession(); onClose(); }}
+            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />

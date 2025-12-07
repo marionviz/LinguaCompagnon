@@ -3,11 +3,12 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveTutorOral from './components/LiveTutorOral';
+import { ToolBox } from './components/ToolBox/ToolBox';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import './index.css';
 
-type ConversationMode = 'ecrit' | 'oral' | null;
+type ConversationMode = 'ecrit' | 'oral' | 'toolbox' | null;
 
 type ChatMessage = { 
   id: string; 
@@ -197,34 +198,55 @@ function App() {
     setShowOralWeekSelector(false);
     setMessages([]);
     initializingRef.current = false;
-    chatRef.current = null;
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
   };
 
   const handleOralWeekSelect = (week: number) => {
-    console.log('🎤 Sélection semaine oral:', week);
+    console.log('🎤 Semaine sélectionnée pour mode oral:', week);
     setCurrentWeek(week);
+    setCurrentThemes(getWeekThemes(week));
     setShowOralWeekSelector(false);
   };
-  
-  const handleDownload = () => {
-    if (messages.length === 0) return;
-    const header = `Conversation - LinguaCompagnon - Semaine ${currentWeek}\n=========================================\n\n`;
-    const formatted = messages.map(msg => {
-      const prefix = msg.role === 'user' ? 'Apprenant' : 'LinguaCompagnon';
-      return `${prefix}: ${msg.text}`;
-    }).join('\n\n');
-    const blob = new Blob([header + formatted], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `conversation-semaine-${currentWeek}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+  const sendMessage = async (userMessage: string) => {
+    if (!chatRef.current || isLoading) {
+      console.log('⚠️ Chat pas prêt ou en cours de chargement');
+      return;
+    }
+
+    console.log('💬 Envoi du message:', userMessage);
+    
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text: userMessage,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('📤 Envoi au modèle...');
+      const result = await chatRef.current.sendMessage(userMessage);
+      console.log('📥 Réponse reçue');
+      
+      const response = await result.response;
+      const text = response.text();
+      console.log('✅ Texte extrait:', text.substring(0, 100) + '...');
+      
+      const modelMsg: ChatMessage = {
+        id: `model-${Date.now()}`,
+        role: 'model',
+        text,
+      };
+
+      setMessages((prev) => [...prev, modelMsg]);
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'envoi du message:', error);
+      setError(`Erreur lors de la communication avec le chatbot: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSpeak = (text: string, messageId: string) => {
@@ -235,117 +257,90 @@ function App() {
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
-    const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
+    
+    const frenchVoice = voices.find(voice => 
+      voice.lang.startsWith('fr-') && 
+      voice.name.toLowerCase().includes('female')
+    ) || voices.find(voice => voice.lang.startsWith('fr-'));
+    
     if (frenchVoice) {
       utterance.voice = frenchVoice;
     }
+    
     utterance.lang = 'fr-FR';
     utterance.rate = 0.9;
     utterance.pitch = 1;
+    
+    utterance.onend = () => {
+      setSpeakingMessageId(null);
+    };
+    
+    utterance.onerror = () => {
+      setSpeakingMessageId(null);
+    };
 
-    utterance.onstart = () => setSpeakingMessageId(messageId);
-    utterance.onend = () => setSpeakingMessageId(null);
-    utterance.onerror = () => setSpeakingMessageId(null);
-
+    setSpeakingMessageId(messageId);
     window.speechSynthesis.speak(utterance);
   };
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || !chatRef.current) {
-      console.warn('⚠️ Pas de texte ou chat non initialisé');
-      return;
-    }
+  const handleDownload = () => {
+    const conversationText = messages.map(msg => 
+      `${msg.role === 'user' ? 'Vous' : 'LinguaCompagnon'}: ${msg.text}`
+    ).join('\n\n');
 
-    console.log('📤 Envoi message:', text.substring(0, 50) + '...');
-    
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text: text.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log('⏳ Attente réponse Gemini...');
-      const result = await chatRef.current.sendMessage(text);
-      const responseText = result.response.text();
-      console.log('✅ Réponse reçue:', responseText.substring(0, 50) + '...');
-
-      if (responseText.includes('[PRATIQUE]')) {
-        const cleanText = responseText.replace(/\[PRATIQUE\]/g, '').trim();
-        
-        const responseMessage: ChatMessage = {
-          id: `model-${Date.now()}`,
-          role: 'model',
-          text: cleanText,
-          hasPractice: true,
-        };
-        setMessages((prev) => [...prev, responseMessage]);
-      } else {
-        const responseMessage: ChatMessage = {
-          id: `model-${Date.now()}`,
-          role: 'model',
-          text: responseText,
-        };
-        setMessages((prev) => [...prev, responseMessage]);
-      }
-    } catch (e) {
-      console.error('❌ Erreur sendMessage:', e);
-      const errorMessage = "Désolé, une erreur est survenue. Veuillez réessayer.";
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
-      const errorMsg: ChatMessage = {
-        id: `model-error-${Date.now()}`,
-        role: 'model',
-        text: errorMessage,
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
+    const blob = new Blob([conversationText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `conversation-semaine-${currentWeek}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  console.log('🎨 Rendu App - mode:', conversationMode, 'selector:', showModeSelector);
-
+  // ====== ÉCRAN SÉLECTION MODE INITIAL ======
   if (showModeSelector) {
     return (
-      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
-        <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+      <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 font-sans">
+        <header className="p-6 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-12 h-12 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
               LC
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">
-                Lingua<span className="text-brand-green">Compagnon</span>
-              </h1>
-              <p className="text-xs text-gray-500">Votre partenaire conversationnel</p>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Lingua<span className="text-brand-green">Compagnon</span>
+            </h1>
           </div>
+          <p className="text-center text-gray-600 mt-2">
+            Votre assistant personnel pour pratiquer le français
+          </p>
         </header>
 
-        <main className="flex-grow flex flex-col items-center justify-center p-8 bg-gray-50">
+        <main className="flex-grow flex flex-col items-center justify-center p-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Que voulez-vous pratiquer aujourd'hui ?
+            <h2 className="text-4xl font-bold text-gray-800 mb-4">
+              Comment voulez-vous pratiquer ?
             </h2>
+            <p className="text-gray-600 text-lg">
+              Choisissez le mode qui correspond à vos besoins d'apprentissage
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+            {/* ✅ MODE ÉCRIT */}
             <button
               onClick={() => handleModeSelect('ecrit')}
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
             >
               <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
                 <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Écrit</h3>
               <p className="text-gray-600 text-center mb-4">
-                Conversation par messages texte avec corrections détaillées
+                Conversation textuelle avec Marion, votre tutrice IA
               </p>
               <ul className="text-sm text-gray-500 space-y-2 text-left">
                 <li>✓ Corrections visuelles</li>
@@ -354,6 +349,7 @@ function App() {
               </ul>
             </button>
 
+            {/* ✅ MODE ORAL */}
             <button
               onClick={() => handleModeSelect('oral')}
               className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
@@ -373,12 +369,39 @@ function App() {
                 <li>✓ Pratique de la prononciation</li>
               </ul>
             </button>
+
+            {/* ✅ NOUVEAU : BOÎTE À OUTILS */}
+            <button
+              onClick={() => handleModeSelect('toolbox')}
+              className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 relative"
+            >
+              <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
+                <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">Ma Boîte à Outils</h3>
+              <p className="text-gray-600 text-center mb-4">
+                Consultez vos notes, stratégies et progression
+              </p>
+              <ul className="text-sm text-gray-500 space-y-2 text-left">
+                <li>✓ Notes personnalisées</li>
+                <li>✓ Stratégies d'apprentissage</li>
+                <li>✓ Suivi de progression</li>
+              </ul>
+              
+              {/* Badge NEW */}
+              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                NEW
+              </span>
+            </button>
           </div>
         </main>
       </div>
     );
   }
 
+  // ====== ÉCRAN SÉLECTION SEMAINE ORAL ======
   if (showOralWeekSelector && conversationMode === 'oral') {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
@@ -447,6 +470,7 @@ function App() {
     );
   }
 
+  // ====== MODE ORAL ======
   if (conversationMode === 'oral') {
     return (
       <LiveTutorOral 
@@ -456,6 +480,40 @@ function App() {
     );
   }
 
+  // ====== MODE BOÎTE À OUTILS ======
+  if (conversationMode === 'toolbox') {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 p-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm">
+                LC
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">
+                  Lingua<span className="text-brand-green">Compagnon</span>
+                </h1>
+                <p className="text-xs text-gray-500">Ma Boîte à Outils</p>
+              </div>
+            </div>
+            <button
+              onClick={handleBackToModeSelector}
+              className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              ← Changer de mode
+            </button>
+          </div>
+        </header>
+        
+        <main className="flex-grow overflow-y-auto">
+          <ToolBox />
+        </main>
+      </div>
+    );
+  }
+
+  // ====== MODE ÉCRIT ======
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
