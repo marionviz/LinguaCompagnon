@@ -1,12 +1,10 @@
-typescript// src/utils/toolboxStorage.ts
+// src/utils/toolboxStorage.ts
 
-import { ToolBoxData, ToolBoxItem, LearningStrategy, SessionData } from '@/types/toolbox.types';
+import { ToolBoxData, ToolBoxItem, LearningStrategy, ToolBoxCategory } from '../types/toolbox.types';
 
 const STORAGE_KEY = 'linguacompagnon_toolbox';
-const SESSIONS_KEY = 'linguacompagnon_sessions';
 
-// Initialisation des données par défaut
-const defaultToolBoxData: ToolBoxData = {
+const getDefaultData = (): ToolBoxData => ({
   items: [],
   strategies: [],
   totalItemsAdded: 0,
@@ -17,27 +15,16 @@ const defaultToolBoxData: ToolBoxData = {
     pronunciation: 0,
     strategy: 0,
   },
-};
-
-// === TOOLBOX OPERATIONS ===
+});
 
 export const getToolBoxData = (): ToolBoxData => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return defaultToolBoxData;
-    
-    const parsed = JSON.parse(stored);
-    // Reconvertir les dates
-    parsed.items = parsed.items.map((item: any) => ({
-      ...item,
-      addedDate: new Date(item.addedDate),
-      lastReviewed: item.lastReviewed ? new Date(item.lastReviewed) : undefined,
-    }));
-    
-    return parsed;
+    if (!stored) return getDefaultData();
+    return JSON.parse(stored);
   } catch (error) {
-    console.error('Error loading toolbox:', error);
-    return defaultToolBoxData;
+    console.error('Erreur lecture toolbox:', error);
+    return getDefaultData();
   }
 };
 
@@ -45,7 +32,7 @@ export const saveToolBoxData = (data: ToolBoxData): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error('Error saving toolbox:', error);
+    console.error('Erreur sauvegarde toolbox:', error);
   }
 };
 
@@ -54,14 +41,14 @@ export const addToolBoxItem = (item: Omit<ToolBoxItem, 'id' | 'addedDate' | 'rev
   
   const newItem: ToolBoxItem = {
     ...item,
-    id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    addedDate: new Date(),
+    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    addedDate: new Date().toISOString(),
     reviewCount: 0,
   };
   
   data.items.push(newItem);
-  data.totalItemsAdded++;
-  data.categoryCounts[item.category]++;
+  data.totalItemsAdded += 1;
+  data.categoryCounts[item.category] += 1;
   
   saveToolBoxData(data);
   return newItem;
@@ -74,7 +61,7 @@ export const removeToolBoxItem = (itemId: string): void => {
   if (itemIndex !== -1) {
     const category = data.items[itemIndex].category;
     data.items.splice(itemIndex, 1);
-    data.categoryCounts[category]--;
+    data.categoryCounts[category] = Math.max(0, data.categoryCounts[category] - 1);
     saveToolBoxData(data);
   }
 };
@@ -89,26 +76,36 @@ export const updateToolBoxItem = (itemId: string, updates: Partial<ToolBoxItem>)
   }
 };
 
-export const markItemAsReviewed = (itemId: string): void => {
+export const reviewToolBoxItem = (itemId: string): void => {
   const data = getToolBoxData();
   const item = data.items.find(item => item.id === itemId);
   
   if (item) {
-    item.reviewCount++;
-    item.lastReviewed = new Date();
+    item.reviewCount += 1;
+    item.lastReviewed = new Date().toISOString();
     saveToolBoxData(data);
   }
 };
 
-// === STRATEGIES OPERATIONS ===
+export const getItemsByCategory = (category: ToolBoxCategory): ToolBoxItem[] => {
+  const data = getToolBoxData();
+  return data.items.filter(item => item.category === category);
+};
+
+export const getRecentItems = (limit: number = 10): ToolBoxItem[] => {
+  const data = getToolBoxData();
+  return [...data.items]
+    .sort((a, b) => new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime())
+    .slice(0, limit);
+};
 
 export const addLearningStrategy = (strategy: Omit<LearningStrategy, 'id' | 'discoveredDate' | 'timesUsed'>): LearningStrategy => {
   const data = getToolBoxData();
   
   const newStrategy: LearningStrategy = {
     ...strategy,
-    id: `strategy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    discoveredDate: new Date(),
+    id: `strategy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    discoveredDate: new Date().toISOString(),
     timesUsed: 0,
   };
   
@@ -122,68 +119,16 @@ export const incrementStrategyUsage = (strategyId: string): void => {
   const strategy = data.strategies.find(s => s.id === strategyId);
   
   if (strategy) {
-    strategy.timesUsed++;
+    strategy.timesUsed += 1;
     saveToolBoxData(data);
   }
 };
 
-// === SESSIONS OPERATIONS ===
-
-export const getSessions = (): SessionData[] => {
-  try {
-    const stored = localStorage.getItem(SESSIONS_KEY);
-    if (!stored) return [];
-    
-    const parsed = JSON.parse(stored);
-    return parsed.map((session: any) => ({
-      ...session,
-      startTime: new Date(session.startTime),
-      endTime: new Date(session.endTime),
-    }));
-  } catch (error) {
-    console.error('Error loading sessions:', error);
-    return [];
-  }
-};
-
-export const addSession = (session: SessionData): void => {
-  try {
-    const sessions = getSessions();
-    sessions.push(session);
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
-  } catch (error) {
-    console.error('Error saving session:', error);
-  }
-};
-
-// === EXPORT OPERATIONS ===
-
-export const exportToolBoxData = (): void => {
+export const exportToolBoxData = (): string => {
   const data = getToolBoxData();
-  const sessions = getSessions();
-  
-  const exportData = {
-    toolbox: data,
-    sessions: sessions,
-    exportDate: new Date().toISOString(),
-    version: '1.0',
-  };
-  
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-    type: 'application/json' 
-  });
-  
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `linguacompagnon_backup_${new Date().toISOString().split('T')[0]}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  return JSON.stringify(data, null, 2);
 };
 
-export const clearAllData = (): void => {
-  if (confirm('Êtes-vous sûr de vouloir supprimer toutes vos données ? Cette action est irréversible.')) {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SESSIONS_KEY);
-  }
+export const clearToolBoxData = (): void => {
+  localStorage.removeItem(STORAGE_KEY);
 };
