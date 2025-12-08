@@ -27,6 +27,7 @@ const correctionTool: FunctionDeclaration = {
 const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) => {
   const week = getOralWeekConfig(weekNumber);
   
+  // ✅ NOUVEAU : Sélecteur de durée
   const [showDurationSelector, setShowDurationSelector] = useState(true);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -37,8 +38,9 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
+  
+  // ✅ NOUVEAU : Boîte à outils
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
-
   const { addItem } = useToolBox();
 
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
@@ -52,37 +54,34 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const animationFrameRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ✅ Timer
   useEffect(() => {
     if (selectedDuration && connectionState === ConnectionState.CONNECTED && timeRemaining > 0) {
       timerIntervalRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            endSession();
+            handleEndCall();
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-
       return () => {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       };
     }
   }, [selectedDuration, connectionState, timeRemaining]);
 
+  // ✅ Boîte à outils
   const addCorrectionToToolbox = useCallback((correction: Correction) => {
     let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
     const explanation = correction.explanation.toLowerCase();
     
-    if (explanation.includes('conjugaison') || explanation.includes('temps') || 
-        explanation.includes('passé composé') || explanation.includes('imparfait') ||
-        explanation.includes('présent') || explanation.includes('futur')) {
+    if (explanation.includes('conjugaison') || explanation.includes('temps')) {
       category = 'conjugation';
-    } else if (explanation.includes('vocabulaire') || explanation.includes('mot') || 
-               explanation.includes('expression')) {
+    } else if (explanation.includes('vocabulaire') || explanation.includes('mot')) {
       category = 'vocabulary';
-    } else if (explanation.includes('prononciation') || explanation.includes('son') ||
-               explanation.includes('accent')) {
+    } else if (explanation.includes('prononciation') || explanation.includes('son')) {
       category = 'pronunciation';
     }
 
@@ -198,10 +197,9 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
             source.connect(processor);
             processor.connect(inputCtx.destination);
-
-            // La session démarre automatiquement, pas besoin de message initial
           },
           onmessage: async (message: LiveServerMessage) => {
+            // Tool calls
             if (message.toolCall) {
                const functionCalls = message.toolCall.functionCalls;
                if (functionCalls && functionCalls.length > 0) {
@@ -211,90 +209,106 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                    console.log("📝 Correction reçue:", correctionData);
                    setAllCorrections(prev => [...prev, correctionData]);
                    addCorrectionToToolbox(correctionData);
-                   // Note: Tool response est géré automatiquement par l'API
+
+                   if (sessionPromiseRef.current) {
+                     sessionPromiseRef.current.then(session => {
+                       session.sendToolResponse({
+                         functionResponses: [{
+                           id: call.id,
+                           name: call.name,
+                           response: { result: "Correction affichée." }
+                         }]
+                       });
+                     });
+                   }
                  }
                }
             }
 
-            if (message.serverContent?.modelTurn?.parts) {
-              for (const part of message.serverContent.modelTurn.parts) {
-                if (part.inlineData?.mimeType?.startsWith("audio/")) {
-                  const audioData = base64ToBytes(part.inlineData.data);
-                  try {
-                    const audioBuffer = await decodeAudioData(audioData, outputCtx);
-                    const source = outputCtx.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(outputNode);
-                    
-                    const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
-                    source.start(startTime);
-                    nextStartTimeRef.current = startTime + audioBuffer.duration;
-                    
-                    sourcesRef.current.add(source);
-                    
-                    setIsAiSpeaking(true);
-                    source.onended = () => {
-                      sourcesRef.current.delete(source);
-                      if (sourcesRef.current.size === 0) {
-                        setIsAiSpeaking(false);
-                      }
-                    };
-                  } catch (err) {
-                    console.error("❌ Erreur décodage audio:", err);
-                  }
-                }
+            // Audio
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (audioData && outputCtx) {
+              setIsAiSpeaking(true);
+              const bytes = base64ToBytes(audioData);
+              const buffer = await decodeAudioData(bytes, outputCtx, 24000, 1);
+              
+              const source = outputCtx.createBufferSource();
+              source.buffer = buffer;
+              source.connect(outputNode);
+
+              const currentTime = outputCtx.currentTime;
+              if (nextStartTimeRef.current < currentTime) {
+                nextStartTimeRef.current = currentTime;
               }
+
+              source.start(nextStartTimeRef.current);
+              nextStartTimeRef.current += buffer.duration;
+
+              sourcesRef.current.add(source);
+              source.onended = () => {
+                sourcesRef.current.delete(source);
+                if (sourcesRef.current.size === 0) setIsAiSpeaking(false);
+              };
+            }
+
+            if (message.serverContent?.interrupted) {
+              sourcesRef.current.forEach(s => s.stop());
+              sourcesRef.current.clear();
+              nextStartTimeRef.current = 0;
+              setIsAiSpeaking(false);
+            }
+
+            if (message.serverContent?.turnComplete) {
+              setIsAiSpeaking(false);
             }
           },
-          onerror: (error: any) => {
-            console.error("❌ Erreur Live API:", error);
-            setConnectionState(ConnectionState.ERROR);
-            setErrorMsg(error.message || "Erreur de connexion");
-          },
           onclose: () => {
-            console.log("🔌 Connexion fermée");
-            stopAudioProcessing();
+            console.log("❌ Connexion fermée");
             setConnectionState(ConnectionState.DISCONNECTED);
           },
-        },
-        systemInstruction: {
-          parts: [{ text: week.systemPrompt }]
-        },
-        generationConfig: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
+          onerror: (err: any) => {
+            console.error("❌ Erreur:", err);
+            setConnectionState(ConnectionState.ERROR);
+            setErrorMsg("Erreur de connexion.");
           }
         },
-        tools: [{ functionDeclarations: [correctionTool] }]
+        config: {
+          responseModalities: [Modality.AUDIO],
+          tools: [{ functionDeclarations: [correctionTool] }],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
+          },
+          systemInstruction: week.systemPrompt
+        }
       };
 
-      console.log("🚀 Démarrage session Live API");
       sessionPromiseRef.current = ai.live.connect(config);
       
-      await sessionPromiseRef.current;
-      
-    } catch (error) {
-      console.error("❌ Erreur startSession:", error);
+    } catch (err: any) {
+      console.error("❌ Erreur:", err);
       setConnectionState(ConnectionState.ERROR);
-      setErrorMsg(error instanceof Error ? error.message : "Erreur inconnue");
+      setErrorMsg("Impossible d'initialiser la session.");
       stopAudioProcessing();
     }
   };
 
-  const endSession = useCallback(() => {
-    console.log("🔚 Arrêt session");
-    sessionPromiseRef.current = null; // Juste annuler la référence
-    stopAudioProcessing();
-    setConnectionState(ConnectionState.DISCONNECTED);
-    setIsAiSpeaking(false);
+  useEffect(() => {
+    return () => stopAudioProcessing();
   }, [stopAudioProcessing]);
 
   useEffect(() => {
-    return () => {
-      endSession();
-    };
-  }, [endSession]);
+    if (connectionState === ConnectionState.CONNECTED) updateVolume();
+    return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
+  }, [connectionState]);
+
+  const handleEndCall = () => {
+    stopAudioProcessing();
+    if (sessionPromiseRef.current) {
+      sessionPromiseRef.current.then(session => (session as any).close?.()).catch(() => {});
+    }
+    sessionPromiseRef.current = null;
+    onClose();
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -302,6 +316,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // ✅ ÉCRAN SÉLECTEUR
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white">
@@ -344,7 +359,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white relative overflow-hidden">
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
       {showToolboxNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -353,25 +368,21 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
           <span className="font-medium">Ajouté à votre boîte à outils !</span>
         </div>
       )}
-
-      <header className="relative z-10 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+      
+      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">LC</div>
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">LC</div>
             <div>
-              <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-              <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
+              <h1 className="text-xl font-bold text-gray-800">Lingua<span className="text-brand-green">Compagnon</span></h1>
+              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
             <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
               <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
             </div>
-            <button 
-              onClick={() => { endSession(); onClose(); }}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors flex items-center gap-2"
-            >
+            <button onClick={handleEndCall} className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -379,27 +390,25 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             </button>
           </div>
         </div>
-        <p className="text-sm text-gray-400">
-          <span className="font-semibold text-gray-300">Objectif :</span> {week.description}
-        </p>
+        <p className="text-sm text-gray-600"><span className="font-semibold text-gray-900">Objectif :</span> {week.description}</p>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 flex flex-col">
+      <main className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
       <div className="flex-1 flex items-center justify-center">
         {connectionState === ConnectionState.CONNECTING && (
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-lg font-medium text-gray-300">Connexion...</span>
+            <span className="text-lg font-medium text-gray-700">Connexion...</span>
           </div>
         )}
 
         {connectionState === ConnectionState.ERROR && (
-          <div className="flex flex-col items-center gap-4 text-red-400">
+          <div className="flex flex-col items-center gap-4 text-red-500">
             <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-lg text-center px-4">{errorMsg}</span>
-            <button onClick={() => setShowDurationSelector(true)} className="mt-4 px-6 py-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors">
+            <span className="text-lg">{errorMsg}</span>
+            <button onClick={() => setShowDurationSelector(true)} className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors">
               Réessayer
             </button>
           </div>
@@ -444,10 +453,8 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       </div>
 
       {allCorrections.length > 0 && (
-        <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto rounded-t-lg">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-bold text-gray-800 uppercase">📝 Corrections ({allCorrections.length})</h3>
-          </div>
+        <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+          <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">📝 Corrections ({allCorrections.length})</h3>
           <div className="space-y-3">
             {allCorrections.map((correction, index) => (
               <div key={index} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
@@ -455,10 +462,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                   <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">#{index + 1}</span>
                   <div className="flex-1">
                     <div className="text-sm text-gray-500 line-through mb-1">{correction.originalSentence}</div>
-                    <div className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
-                      <span className="text-brand-green">→</span>
-                      {correction.correctedSentence}
-                    </div>
+                    <div className="text-sm font-semibold text-gray-800 mb-1">→ {correction.correctedSentence}</div>
                     <p className="text-xs text-gray-600 italic">💡 {correction.explanation}</p>
                   </div>
                 </div>
@@ -468,6 +472,28 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
       </main>
+
+      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setIsMicMuted(!isMicMuted)}
+            disabled={connectionState !== ConnectionState.CONNECTED}
+            className={`p-4 rounded-full transition-all ${
+              isMicMuted 
+                ? 'bg-gray-200 text-gray-500 hover:bg-gray-300' 
+                : 'bg-brand-green text-white hover:bg-green-600 shadow-md'
+            } disabled:opacity-30 disabled:cursor-not-allowed`}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMicMuted ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </footer>
     </div>
   );
 };
