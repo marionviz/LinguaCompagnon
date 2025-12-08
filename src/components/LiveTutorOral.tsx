@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
 import { ConnectionState, Correction } from '../typesOral';
-import { createPCM16Blob, base64ToBytes } from '../utils/audioUtilsLive';
+import { createPCM16Blob, base64ToBytes, decodeAudioData } from '../utils/audioUtilsLive';
 import { GEMINI_MODEL_LIVE, getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
 
@@ -10,25 +10,15 @@ interface LiveTutorOralProps {
   onClose: () => void;
 }
 
-// Outil pour les corrections écrites
 const correctionTool: FunctionDeclaration = {
   name: "displayCorrection",
   description: "Affiche une correction écrite sur l'écran. À utiliser quand l'apprenant fait une erreur de grammaire ou de vocabulaire importante.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      originalSentence: {
-        type: Type.STRING,
-        description: "La phrase exacte dite par l'utilisateur avec l'erreur.",
-      },
-      correctedSentence: {
-        type: Type.STRING,
-        description: "La version corrigée de la phrase.",
-      },
-      explanation: {
-        type: Type.STRING,
-        description: "Une explication très brève (max 10 mots) de l'erreur.",
-      },
+      originalSentence: { type: Type.STRING, description: "La phrase exacte dite par l'utilisateur avec l'erreur." },
+      correctedSentence: { type: Type.STRING, description: "La version corrigée de la phrase." },
+      explanation: { type: Type.STRING, description: "Une explication très brève (max 10 mots) de l'erreur." },
     },
     required: ["originalSentence", "correctedSentence", "explanation"],
   },
@@ -51,8 +41,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   const { addItem } = useToolBox();
 
-  // Refs pour gestion audio
-  const sessionRef = useRef<any>(null);
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
@@ -83,7 +72,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   const addCorrectionToToolbox = useCallback((correction: Correction) => {
     let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
-    
     const explanation = correction.explanation.toLowerCase();
     
     if (explanation.includes('conjugaison') || explanation.includes('temps') || 
@@ -131,12 +119,8 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       mediaStreamRef.current = null;
     }
 
-    if (inputAudioContextRef.current?.state !== 'closed') {
-      try { inputAudioContextRef.current.close(); } catch (e) { /* ignore */ }
-    }
-    if (outputAudioContextRef.current?.state !== 'closed') {
-      try { outputAudioContextRef.current.close(); } catch (e) { /* ignore */ }
-    }
+    if (inputAudioContextRef.current?.state !== 'closed') inputAudioContextRef.current?.close();
+    if (outputAudioContextRef.current?.state !== 'closed') outputAudioContextRef.current?.close();
     
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -186,6 +170,109 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const config = {
         model: GEMINI_MODEL_LIVE,
+        callbacks: {
+          onopen: async () => {
+            console.log("✅ Connexion Live API ouverte");
+            setConnectionState(ConnectionState.CONNECTED);
+            
+            const source = inputCtx.createMediaStreamSource(stream);
+            const analyzer = inputCtx.createAnalyser();
+            analyzer.fftSize = 256;
+            source.connect(analyzer);
+            analyzerRef.current = analyzer;
+            updateVolume();
+
+            const processor = inputCtx.createScriptProcessor(4096, 1, 1);
+            scriptProcessorRef.current = processor;
+
+            processor.onaudioprocess = (e) => {
+              if (isMicMuted) return; 
+              const inputData = e.inputBuffer.getChannelData(0);
+              const pcmBlob = createPCM16Blob(inputData);
+              if (sessionPromiseRef.current) {
+                sessionPromiseRef.current.then(session => {
+                  session.sendRealtimeInput({ media: pcmBlob });
+                }).catch(console.error);
+              }
+            };
+
+            source.connect(processor);
+            processor.connect(inputCtx.destination);
+
+            if (sessionPromiseRef.current) {
+              sessionPromiseRef.current.then(session => {
+                session.send({ parts: [{ text: `La session est ouverte pour ${duration} minutes. Salue l'étudiant et commence l'exercice immédiatement.` }] });
+              });
+            }
+          },
+          onmessage: async (message: LiveServerMessage) => {
+            if (message.toolCall) {
+               const functionCalls = message.toolCall.functionCalls;
+               if (functionCalls && functionCalls.length > 0) {
+                 const call = functionCalls[0];
+                 if (call.name === 'displayCorrection') {
+                   const correctionData = call.args as unknown as Correction;
+                   console.log("📝 Correction reçue:", correctionData);
+                   setAllCorrections(prev => [...prev, correctionData]);
+                   addCorrectionToToolbox(correctionData);
+
+                   if (sessionPromiseRef.current) {
+                     sessionPromiseRef.current.then(session => {
+                       session.send({
+                         toolResponse: {
+                           functionResponses: [{
+                             name: 'displayCorrection',
+                             response: { success: true }
+                           }]
+                         }
+                       });
+                     }).catch(console.error);
+                   }
+                 }
+               }
+            }
+
+            if (message.serverContent?.modelTurn?.parts) {
+              for (const part of message.serverContent.modelTurn.parts) {
+                if (part.inlineData?.mimeType?.startsWith("audio/")) {
+                  const audioData = base64ToBytes(part.inlineData.data);
+                  try {
+                    const audioBuffer = await decodeAudioData(audioData, outputCtx);
+                    const source = outputCtx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(outputNode);
+                    
+                    const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
+                    source.start(startTime);
+                    nextStartTimeRef.current = startTime + audioBuffer.duration;
+                    
+                    sourcesRef.current.add(source);
+                    
+                    setIsAiSpeaking(true);
+                    source.onended = () => {
+                      sourcesRef.current.delete(source);
+                      if (sourcesRef.current.size === 0) {
+                        setIsAiSpeaking(false);
+                      }
+                    };
+                  } catch (err) {
+                    console.error("❌ Erreur décodage audio:", err);
+                  }
+                }
+              }
+            }
+          },
+          onerror: (error: any) => {
+            console.error("❌ Erreur Live API:", error);
+            setConnectionState(ConnectionState.ERROR);
+            setErrorMsg(error.message || "Erreur de connexion");
+          },
+          onclose: () => {
+            console.log("🔌 Connexion fermée");
+            stopAudioProcessing();
+            setConnectionState(ConnectionState.DISCONNECTED);
+          },
+        },
         systemInstruction: {
           parts: [{ text: week.systemPrompt }]
         },
@@ -199,105 +286,9 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       };
 
       console.log("🚀 Démarrage session Live API");
-      const session = await ai.live.connect(config);
-      sessionRef.current = session;
-
-      // Setup audio input
-      const source = inputCtx.createMediaStreamSource(stream);
-      const analyzer = inputCtx.createAnalyser();
-      analyzer.fftSize = 256;
-      source.connect(analyzer);
-      analyzerRef.current = analyzer;
-      updateVolume();
-
-      const processor = inputCtx.createScriptProcessor(4096, 1, 1);
-      scriptProcessorRef.current = processor;
-
-      processor.onaudioprocess = (e) => {
-        if (isMicMuted || !sessionRef.current) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcmBlob = createPCM16Blob(inputData);
-        try {
-          sessionRef.current.sendRealtimeInput({ media: pcmBlob });
-        } catch (err) {
-          console.error("Erreur envoi audio:", err);
-        }
-      };
-
-      source.connect(processor);
-      processor.connect(inputCtx.destination);
-
-      // Message handlers
-      session.on('message', async (message: LiveServerMessage) => {
-        if (message.toolCall) {
-           const functionCalls = message.toolCall.functionCalls;
-           if (functionCalls && functionCalls.length > 0) {
-             const call = functionCalls[0];
-             if (call.name === 'displayCorrection') {
-               const correctionData = call.args as unknown as Correction;
-               console.log("📝 Correction reçue:", correctionData);
-               setAllCorrections(prev => [...prev, correctionData]);
-               addCorrectionToToolbox(correctionData);
-
-               try {
-                 sessionRef.current.sendToolResponse({
-                   functionResponses: [{
-                     name: 'displayCorrection',
-                     response: { success: true }
-                   }]
-                 });
-               } catch (err) {
-                 console.error("Erreur tool response:", err);
-               }
-             }
-           }
-        }
-
-        if (message.serverContent?.modelTurn?.parts) {
-          for (const part of message.serverContent.modelTurn.parts) {
-            if (part.inlineData?.mimeType?.startsWith("audio/")) {
-              const audioData = base64ToBytes(part.inlineData.data);
-              try {
-                const audioBuffer = await outputCtx.decodeAudioData(audioData.buffer);
-                const source = outputCtx.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(outputNode);
-                
-                const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
-                source.start(startTime);
-                nextStartTimeRef.current = startTime + audioBuffer.duration;
-                
-                sourcesRef.current.add(source);
-                
-                setIsAiSpeaking(true);
-                source.onended = () => {
-                  sourcesRef.current.delete(source);
-                  if (sourcesRef.current.size === 0) {
-                    setIsAiSpeaking(false);
-                  }
-                };
-              } catch (err) {
-                console.error("❌ Erreur décodage audio:", err);
-              }
-            }
-          }
-        }
-      });
-
-      session.on('error', (error: any) => {
-        console.error("❌ Erreur Live API:", error);
-        setConnectionState(ConnectionState.ERROR);
-        setErrorMsg(error.message || "Erreur de connexion");
-      });
-
-      session.on('close', () => {
-        console.log("🔌 Connexion fermée");
-        stopAudioProcessing();
-        setConnectionState(ConnectionState.DISCONNECTED);
-      });
-
-      setConnectionState(ConnectionState.CONNECTED);
-      console.log("✅ Session connectée");
+      sessionPromiseRef.current = ai.live.connect(config);
+      
+      await sessionPromiseRef.current;
       
     } catch (error) {
       console.error("❌ Erreur startSession:", error);
@@ -308,14 +299,16 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   const endSession = useCallback(() => {
-    console.log("🔚 Arrêt manuel de la session");
-    if (sessionRef.current) {
-      try {
-        sessionRef.current.close();
-      } catch (e) {
-        console.error("Erreur fermeture session:", e);
-      }
-      sessionRef.current = null;
+    console.log("🔚 Arrêt session");
+    if (sessionPromiseRef.current) {
+      sessionPromiseRef.current.then(session => {
+        try {
+          session.disconnect();
+        } catch (e) {
+          console.error("Erreur disconnect:", e);
+        }
+      }).catch(console.error);
+      sessionPromiseRef.current = null;
     }
     stopAudioProcessing();
     setConnectionState(ConnectionState.DISCONNECTED);
@@ -334,40 +327,26 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ÉCRAN SÉLECTION DURÉE
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white">
         <header className="p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-green/50">
-                LC
-              </div>
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">LC</div>
               <div>
-                <h1 className="text-xl font-bold">
-                  Lingua<span className="text-brand-green">Compagnon</span>
-                </h1>
+                <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
                 <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
               </div>
             </div>
-            <button 
-              onClick={onClose}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors"
-            >
-              ← Retour
-            </button>
+            <button onClick={onClose} className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors">← Retour</button>
           </div>
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Combien de temps voulez-vous pratiquer ?
-            </h2>
-            <p className="text-gray-400 text-lg">
-              Choisissez la durée de votre conversation avec François
-            </p>
+            <h2 className="text-3xl font-bold text-white mb-4">Combien de temps voulez-vous pratiquer ?</h2>
+            <p className="text-gray-400 text-lg">Choisissez la durée de votre conversation avec François</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
@@ -377,19 +356,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                 onClick={() => startSession(duration)}
                 className="group p-8 bg-gray-800 border-2 border-gray-700 rounded-xl hover:border-brand-green hover:bg-gray-700 transition-all duration-300 flex flex-col items-center gap-3"
               >
-                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">
-                  {duration}
-                </div>
-                <div className="text-sm text-gray-400 group-hover:text-white transition-colors">
-                  minute{duration > 1 ? 's' : ''}
-                </div>
+                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">{duration}</div>
+                <div className="text-sm text-gray-400 group-hover:text-white transition-colors">minute{duration > 1 ? 's' : ''}</div>
               </button>
             ))}
           </div>
 
-          <div className="mt-8 text-center text-gray-500 text-sm">
-            💡 Conseil : Commencez par 2-5 minutes pour vous familiariser
-          </div>
+          <div className="mt-8 text-center text-gray-500 text-sm">💡 Conseil : Commencez par 2-5 minutes pour vous familiariser</div>
         </main>
       </div>
     );
@@ -409,13 +382,9 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       <header className="relative z-10 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-green/50">
-              LC
-            </div>
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">LC</div>
             <div>
-              <h1 className="text-xl font-bold">
-                Lingua<span className="text-brand-green">Compagnon</span>
-              </h1>
+              <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
               <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
             </div>
           </div>
@@ -503,31 +472,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto rounded-t-lg">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-bold text-gray-800 uppercase">📝 Corrections ({allCorrections.length})</h3>
-            <button
-              onClick={() => {
-                const content = allCorrections.map((c, i) => 
-                  `CORRECTION ${i+1}\n` +
-                  `Vous avez dit : ${c.originalSentence}\n` +
-                  `Correction : ${c.correctedSentence}\n` +
-                  `Explication : ${c.explanation}\n\n`
-                ).join('---\n\n');
-                const blob = new Blob([`CORRECTIONS - LinguaCompagnon\nSemaine ${week.id}\n\n${content}`], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `corrections-semaine-${week.id}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center gap-2 px-3 py-1 bg-brand-green hover:bg-green-600 text-white rounded-lg text-xs font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Télécharger
-            </button>
           </div>
           <div className="space-y-3">
             {allCorrections.map((correction, index) => (
