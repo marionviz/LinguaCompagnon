@@ -1,186 +1,188 @@
 // src/components/ToolBox/ToolBoxCategory.tsx
 
 import React, { useState } from 'react';
-import { useToolBox } from '@/hooks/useToolBox';
-import { ToolBoxCategory as CategoryType, ToolBoxItem } from '@/types/toolbox.types'; // ✅ Renommé en CategoryType
-import { ToolBoxItem as ItemComponent } from './ToolBoxItem';
-import { Plus, AlertCircle } from 'lucide-react';
+import { ToolBoxItem as ToolBoxItemType, ToolBoxCategory as CategoryType } from '../../types/toolbox.types';
+import { ToolBoxItem } from './ToolBoxItem';
 
-interface Props {
-  category: CategoryType; // ✅ Utilise CategoryType au lieu de ToolBoxCategory
-  config: {
-    icon: any;
-    label: string;
-    color: string;
-    description: string;
-  };
+interface ToolBoxCategoryProps {
+  category: CategoryType;
+  items: ToolBoxItemType[];
+  onAddItem: (item: Omit<ToolBoxItemType, 'id' | 'addedDate' | 'reviewCount'>) => void;
+  onRemoveItem: (id: string) => void;
+  onUpdateItem: (id: string, updates: Partial<ToolBoxItemType>) => void;
+  onReviewItem: (id: string) => void;
 }
 
-export const ToolBoxCategory: React.FC<Props> = ({ category, config }) => {
-  const { getItemsByCategory, addToolBoxItem } = useToolBox();
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    example: '',
-    learningStrategy: '',
-    errorContext: '',
-  });
+const categoryLabels: Record<CategoryType, string> = {
+  grammar: 'Grammaire',
+  vocabulary: 'Vocabulaire',
+  conjugation: 'Conjugaison',
+  pronunciation: 'Prononciation',
+  strategy: 'Stratégies d\'apprentissage',
+};
 
-  const items = getItemsByCategory(category);
-  const Icon = config.icon;
+const categoryIcons: Record<CategoryType, string> = {
+  grammar: '📐',
+  vocabulary: '📚',
+  conjugation: '🔄',
+  pronunciation: '🗣️',
+  strategy: '💡',
+};
+
+export const ToolBoxCategory: React.FC<ToolBoxCategoryProps> = ({
+  category,
+  items,
+  onAddItem,
+  onRemoveItem,
+  onUpdateItem,
+  onReviewItem,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newExample, setNewExample] = useState('');
+  const [newStrategy, setNewStrategy] = useState('');
+  const [newContext, setNewContext] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.description.trim()) {
+    if (!newTitle.trim() || !newDescription.trim()) {
       alert('Le titre et la description sont obligatoires');
       return;
     }
 
-    addToolBoxItem({
+    onAddItem({
       category,
-      title: formData.title,
-      description: formData.description,
-      example: formData.example || undefined,
-      learningStrategy: formData.learningStrategy || undefined,
-      errorContext: formData.errorContext || undefined,
+      title: newTitle.trim(),
+      description: newDescription.trim(),
+      example: newExample.trim() || undefined,
+      learningStrategy: newStrategy.trim() || undefined,
+      errorContext: newContext.trim() || undefined,
     });
 
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      example: '',
-      learningStrategy: '',
-      errorContext: '',
-    });
+    // Réinitialiser le formulaire
+    setNewTitle('');
+    setNewDescription('');
+    setNewExample('');
+    setNewStrategy('');
+    setNewContext('');
     setShowAddForm(false);
   };
 
   return (
-    <div>
-      {/* Header catégorie */}
-      <div className={`${config.color} p-4 rounded-lg mb-6`}>
-        <div className="flex items-center gap-3 mb-2">
-          <Icon className="w-6 h-6" />
-          <h2 className="text-xl font-semibold">{config.label}</h2>
-        </div>
-        <p className="text-sm opacity-80">{config.description}</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <span className="text-2xl">{categoryIcons[category]}</span>
+          {categoryLabels[category]}
+          <span className="text-sm font-normal text-gray-500">({items.length})</span>
+        </h3>
+        
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+        >
+          {showAddForm ? '✕ Annuler' : '+ Ajouter'}
+        </button>
       </div>
 
-      {/* Bouton ajouter */}
-      <button
-        onClick={() => setShowAddForm(!showAddForm)}
-        className="w-full mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition flex items-center justify-center gap-2 text-gray-600 hover:text-blue-600"
-      >
-        <Plus className="w-5 h-5" />
-        Ajouter un élément
-      </button>
-
-      {/* Formulaire d'ajout */}
       {showAddForm && (
-        <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Nouvel élément</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Titre / Concept principal *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Ex: Accord du participe passé avec 'être'"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Titre *
+            </label>
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Ex: Accord du participe passé"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green focus:border-transparent"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Explication / Règle *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Ex: Avec l'auxiliaire 'être', le participe passé s'accorde avec le sujet"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Explication *
+            </label>
+            <textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Ex: Avec l'auxiliaire 'être', le participe passé s'accorde avec le sujet"
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green focus:border-transparent"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Exemple concret
-              </label>
-              <input
-                type="text"
-                value={formData.example}
-                onChange={(e) => setFormData({ ...formData, example: e.target.value })}
-                placeholder="Ex: Elle est allée (féminin) / Ils sont partis (masculin pluriel)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Exemple
+            </label>
+            <textarea
+              value={newExample}
+              onChange={(e) => setNewExample(e.target.value)}
+              placeholder="Ex: Elle est allée (pas 'allé')"
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green focus:border-transparent"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                💡 Ma stratégie pour m'en souvenir
-              </label>
-              <textarea
-                value={formData.learningStrategy}
-                onChange={(e) => setFormData({ ...formData, learningStrategy: e.target.value })}
-                placeholder="Ex: Je pense à 'être = accord' / Je visualise le genre du sujet avant d'écrire"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Stratégie de mémorisation
+            </label>
+            <input
+              type="text"
+              value={newStrategy}
+              onChange={(e) => setNewStrategy(e.target.value)}
+              placeholder="Ex: Penser à 'être' = accord automatique"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green focus:border-transparent"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ⚠️ Contexte de mon erreur (optionnel)
-              </label>
-              <input
-                type="text"
-                value={formData.errorContext}
-                onChange={(e) => setFormData({ ...formData, errorContext: e.target.value })}
-                placeholder="Ex: J'avais écrit 'elle est allé' dans un email formel"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contexte de l'erreur
+            </label>
+            <input
+              type="text"
+              value={newContext}
+              onChange={(e) => setNewContext(e.target.value)}
+              placeholder="Ex: Erreur récurrente dans mes écrits"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-green focus:border-transparent"
+            />
+          </div>
 
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-              >
-                Ajouter à ma boîte à outils
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+          >
+            ✓ Ajouter à ma boîte à outils
+          </button>
+        </form>
       )}
 
-      {/* Liste des items */}
-      {items.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Aucun élément dans cette catégorie pour le moment.</p>
-          <p className="text-sm mt-2">Ajoutez vos découvertes au fur et à mesure !</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {items.map(item => (
-            <ItemComponent key={item.id} item={item} />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">Aucun élément dans cette catégorie</p>
+            <p className="text-xs mt-1">Cliquez sur "+ Ajouter" pour commencer</p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <ToolBoxItem
+              key={item.id}
+              item={item}
+              onRemove={onRemoveItem}
+              onUpdate={onUpdateItem}
+              onReview={onReviewItem}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 };
