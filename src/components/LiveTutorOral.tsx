@@ -199,11 +199,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             source.connect(processor);
             processor.connect(inputCtx.destination);
 
-            if (sessionPromiseRef.current) {
-              sessionPromiseRef.current.then(session => {
-                session.send({ parts: [{ text: `La session est ouverte pour ${duration} minutes. Salue l'étudiant et commence l'exercice immédiatement.` }] });
-              });
-            }
+            // La session démarre automatiquement, pas besoin de message initial
           },
           onmessage: async (message: LiveServerMessage) => {
             if (message.toolCall) {
@@ -215,19 +211,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                    console.log("📝 Correction reçue:", correctionData);
                    setAllCorrections(prev => [...prev, correctionData]);
                    addCorrectionToToolbox(correctionData);
-
-                   if (sessionPromiseRef.current) {
-                     sessionPromiseRef.current.then(session => {
-                       session.send({
-                         toolResponse: {
-                           functionResponses: [{
-                             name: 'displayCorrection',
-                             response: { success: true }
-                           }]
-                         }
-                       });
-                     }).catch(console.error);
-                   }
+                   // Note: Tool response est géré automatiquement par l'API
                  }
                }
             }
