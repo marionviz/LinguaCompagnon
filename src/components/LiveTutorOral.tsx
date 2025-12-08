@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
 import { ConnectionState, Correction } from '../typesOral';
-import { createPCM16Blob, base64ToBytes, decodeAudioData } from '../utils/audioUtilsLive';
+import { createPCM16Blob, base64ToBytes } from '../utils/audioUtilsLive';
 import { GEMINI_MODEL_LIVE, getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
 
@@ -37,17 +37,19 @@ const correctionTool: FunctionDeclaration = {
 const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) => {
   const week = getOralWeekConfig(weekNumber);
   
+  // ✅ NOUVEAU : État pour sélection durée
+  const [showDurationSelector, setShowDurationSelector] = useState(true);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
-  
-  // ✅ NOUVEAU : État pour notification ajout Boîte à Outils
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
 
-  // ✅ NOUVEAU : Hook pour gérer la Boîte à Outils
   const { addItem } = useToolBox();
 
   // Refs pour gestion audio
@@ -58,13 +60,31 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ NOUVEAU : Fonction pour catégoriser et ajouter à la Boîte à Outils
+  // ✅ Timer pour décompte
+  useEffect(() => {
+    if (selectedDuration && connectionState === ConnectionState.CONNECTED && timeRemaining > 0) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            // Fin du temps
+            endSession();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      };
+    }
+  }, [selectedDuration, connectionState, timeRemaining]);
+
   const addCorrectionToToolbox = useCallback((correction: Correction) => {
-    // Déterminer la catégorie automatiquement
     let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
     
     const explanation = correction.explanation.toLowerCase();
@@ -81,12 +101,10 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       category = 'pronunciation';
     }
 
-    // Créer un titre court pour la Boîte à Outils
     const title = correction.explanation.length > 50 
       ? correction.explanation.substring(0, 50) + '...'
       : correction.explanation;
 
-    // Ajouter à la Boîte à Outils
     addItem({
       category,
       title,
@@ -95,7 +113,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
     });
 
-    // Afficher la notification
     setShowToolboxNotification(true);
     setTimeout(() => setShowToolboxNotification(false), 3000);
   }, [addItem, weekNumber]);
@@ -121,6 +138,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     if (outputAudioContextRef.current?.state !== 'closed') outputAudioContextRef.current?.close();
     
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
   }, []);
 
   const updateVolume = () => {
@@ -133,8 +151,11 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     }
   };
 
-  const startSession = async () => {
+  const startSession = async (duration: number) => {
     try {
+      setSelectedDuration(duration);
+      setTimeRemaining(duration * 60); // Convertir minutes en secondes
+      setShowDurationSelector(false);
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
 
@@ -193,15 +214,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             source.connect(processor);
             processor.connect(inputCtx.destination);
 
-            // Déclencher le démarrage immédiat
             if (sessionPromiseRef.current) {
               sessionPromiseRef.current.then(session => {
-                session.send({ parts: [{ text: "La session est ouverte. Salue l'étudiant et commence l'exercice immédiatement." }] });
+                session.send({ parts: [{ text: `La session est ouverte pour ${duration} minutes. Salue l'étudiant et commence l'exercice immédiatement.` }] });
               });
             }
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Gérer les corrections via tool calls
             if (message.toolCall) {
                const functionCalls = message.toolCall.functionCalls;
                if (functionCalls && functionCalls.length > 0) {
@@ -210,11 +229,8 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                    const correctionData = call.args as unknown as Correction;
                    console.log("📝 Correction reçue:", correctionData);
                    setAllCorrections(prev => [...prev, correctionData]);
-                   
-                   // ✅ NOUVEAU : Ajouter automatiquement à la Boîte à Outils
                    addCorrectionToToolbox(correctionData);
 
-                   // Envoyer confirmation au modèle
                    if (sessionPromiseRef.current) {
                      sessionPromiseRef.current.then(session => {
                        session.send({
@@ -231,13 +247,12 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                }
             }
 
-            // Gérer les réponses audio
             if (message.serverContent?.modelTurn?.parts) {
               for (const part of message.serverContent.modelTurn.parts) {
                 if (part.inlineData?.mimeType?.startsWith("audio/")) {
                   const audioData = base64ToBytes(part.inlineData.data);
                   try {
-                    const audioBuffer = await decodeAudioData(outputCtx, audioData.buffer);
+                    const audioBuffer = await outputCtx.decodeAudioData(audioData.buffer);
                     const source = outputCtx.createBufferSource();
                     source.buffer = audioBuffer;
                     source.connect(outputNode);
@@ -321,9 +336,77 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     };
   }, [endSession]);
 
+  // ✅ Formater le temps restant
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ✅ ÉCRAN SÉLECTION DURÉE
+  if (showDurationSelector) {
+    return (
+      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white">
+        <header className="p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-green/50">
+                LC
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">
+                  Lingua<span className="text-brand-green">Compagnon</span>
+                </h1>
+                <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
+              </div>
+            </div>
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors"
+            >
+              ← Retour
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Combien de temps voulez-vous pratiquer ?
+            </h2>
+            <p className="text-gray-400 text-lg">
+              Choisissez la durée de votre conversation avec François
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
+            {[2, 5, 8, 10].map((duration) => (
+              <button
+                key={duration}
+                onClick={() => startSession(duration)}
+                className="group p-8 bg-gray-800 border-2 border-gray-700 rounded-xl hover:border-brand-green hover:bg-gray-700 transition-all duration-300 flex flex-col items-center gap-3"
+              >
+                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">
+                  {duration}
+                </div>
+                <div className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                  minute{duration > 1 ? 's' : ''}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center text-gray-500 text-sm">
+            💡 Conseil : Commencez par 2-5 minutes pour vous familiariser
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white relative overflow-hidden">
-      {/* ✅ NOUVEAU : Notification ajout Boîte à Outils */}
+      {/* Notification Boîte à Outils */}
       {showToolboxNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -333,14 +416,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
 
-      {/* Fond animé */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-brand-green rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
-      </div>
-
-      {/* Header */}
+      {/* Header avec timer */}
       <header className="relative z-10 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
@@ -354,15 +430,22 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
             </div>
           </div>
-          <button 
-            onClick={() => { endSession(); onClose(); }}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
-            </svg>
-            Terminer
-          </button>
+          
+          {/* ✅ Timer */}
+          <div className="flex items-center gap-4">
+            <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
+              <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+            </div>
+            <button 
+              onClick={() => { endSession(); onClose(); }}
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Terminer
+            </button>
+          </div>
         </div>
         <p className="text-sm text-gray-400">
           <span className="font-semibold text-gray-300">Objectif :</span> {week.description}
@@ -374,20 +457,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         
       {/* Zone centrale avec visualiseur */}
       <div className="flex-1 flex items-center justify-center">
-        {connectionState === ConnectionState.DISCONNECTED && (
-          <button 
-            onClick={startSession}
-            className="group flex flex-col items-center gap-6"
-          >
-            <div className="w-32 h-32 rounded-full bg-brand-green flex items-center justify-center shadow-2xl shadow-brand-green/50 group-hover:scale-110 transition-transform">
-              <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </div>
-            <span className="text-xl font-semibold text-gray-200 group-hover:text-white">Démarrer la conversation</span>
-          </button>
-        )}
-
         {connectionState === ConnectionState.CONNECTING && (
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin"></div>
@@ -401,7 +470,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-lg">{errorMsg}</span>
-            <button onClick={startSession} className="mt-4 px-6 py-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors">
+            <button onClick={() => setShowDurationSelector(true)} className="mt-4 px-6 py-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors">
               Réessayer
             </button>
           </div>
@@ -445,7 +514,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         )}
       </div>
 
-      {/* Zone des corrections en bas */}
+      {/* Zone des corrections */}
       {allCorrections.length > 0 && (
         <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto rounded-t-lg">
           <div className="flex justify-between items-center mb-3">
@@ -496,29 +565,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
       </main>
-
-      {/* Footer avec contrôles */}
-      <footer className="relative z-10 bg-gray-900/50 backdrop-blur-sm border-t border-gray-700 p-4">
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setIsMicMuted(!isMicMuted)}
-            disabled={connectionState !== ConnectionState.CONNECTED}
-            className={`p-4 rounded-full transition-all ${
-              isMicMuted 
-                ? 'bg-gray-600 text-gray-300 hover:bg-gray-700' 
-                : 'bg-brand-green text-white hover:bg-green-600 shadow-lg shadow-brand-green/30'
-            } disabled:opacity-30 disabled:cursor-not-allowed`}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {isMicMuted ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              )}
-            </svg>
-          </button>
-        </div>
-      </footer>
     </div>
   );
 };
