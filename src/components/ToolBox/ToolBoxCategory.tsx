@@ -1,13 +1,13 @@
-typescript// src/components/ToolBox/ToolBoxCategory.tsx
+// src/components/ToolBox/ToolBoxCategory.tsx
 
 import React, { useState } from 'react';
 import { useToolBox } from '@/hooks/useToolBox';
-import { ToolBoxCategory, ToolBoxItem } from '@/types/toolbox.types';
+import { ToolBoxCategory as CategoryType, ToolBoxItem } from '@/types/toolbox.types'; // ✅ Renommé en CategoryType
 import { ToolBoxItem as ItemComponent } from './ToolBoxItem';
 import { Plus, AlertCircle } from 'lucide-react';
 
 interface Props {
-  category: ToolBoxCategory;
+  category: CategoryType; // ✅ Utilise CategoryType au lieu de ToolBoxCategory
   config: {
     icon: any;
     label: string;
