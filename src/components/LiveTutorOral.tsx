@@ -284,16 +284,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   const endSession = useCallback(() => {
     console.log("🔚 Arrêt session");
-    if (sessionPromiseRef.current) {
-      sessionPromiseRef.current.then(session => {
-        try {
-          session.disconnect();
-        } catch (e) {
-          console.error("Erreur disconnect:", e);
-        }
-      }).catch(console.error);
-      sessionPromiseRef.current = null;
-    }
+    sessionPromiseRef.current = null; // Juste annuler la référence
     stopAudioProcessing();
     setConnectionState(ConnectionState.DISCONNECTED);
     setIsAiSpeaking(false);
