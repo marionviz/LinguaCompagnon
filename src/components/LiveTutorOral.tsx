@@ -37,7 +37,6 @@ const correctionTool: FunctionDeclaration = {
 const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) => {
   const week = getOralWeekConfig(weekNumber);
   
-  // ✅ NOUVEAU : État pour sélection durée
   const [showDurationSelector, setShowDurationSelector] = useState(true);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -53,7 +52,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const { addItem } = useToolBox();
 
   // Refs pour gestion audio
-  const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const sessionRef = useRef<any>(null);
   const nextStartTimeRef = useRef<number>(0);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
@@ -64,13 +63,11 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const animationFrameRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ Timer pour décompte
   useEffect(() => {
     if (selectedDuration && connectionState === ConnectionState.CONNECTED && timeRemaining > 0) {
       timerIntervalRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            // Fin du temps
             endSession();
             return 0;
           }
@@ -134,8 +131,12 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       mediaStreamRef.current = null;
     }
 
-    if (inputAudioContextRef.current?.state !== 'closed') inputAudioContextRef.current?.close();
-    if (outputAudioContextRef.current?.state !== 'closed') outputAudioContextRef.current?.close();
+    if (inputAudioContextRef.current?.state !== 'closed') {
+      try { inputAudioContextRef.current.close(); } catch (e) { /* ignore */ }
+    }
+    if (outputAudioContextRef.current?.state !== 'closed') {
+      try { outputAudioContextRef.current.close(); } catch (e) { /* ignore */ }
+    }
     
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -154,7 +155,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const startSession = async (duration: number) => {
     try {
       setSelectedDuration(duration);
-      setTimeRemaining(duration * 60); // Convertir minutes en secondes
+      setTimeRemaining(duration * 60);
       setShowDurationSelector(false);
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
@@ -185,109 +186,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const config = {
         model: GEMINI_MODEL_LIVE,
-        callbacks: {
-          onopen: async () => {
-            console.log("✅ Connexion Live API ouverte");
-            setConnectionState(ConnectionState.CONNECTED);
-            
-            const source = inputCtx.createMediaStreamSource(stream);
-            const analyzer = inputCtx.createAnalyser();
-            analyzer.fftSize = 256;
-            source.connect(analyzer);
-            analyzerRef.current = analyzer;
-            updateVolume();
-
-            const processor = inputCtx.createScriptProcessor(4096, 1, 1);
-            scriptProcessorRef.current = processor;
-
-            processor.onaudioprocess = (e) => {
-              if (isMicMuted) return; 
-              const inputData = e.inputBuffer.getChannelData(0);
-              const pcmBlob = createPCM16Blob(inputData);
-              if (sessionPromiseRef.current) {
-                sessionPromiseRef.current.then(session => {
-                  session.sendRealtimeInput({ media: pcmBlob });
-                }).catch(console.error);
-              }
-            };
-
-            source.connect(processor);
-            processor.connect(inputCtx.destination);
-
-            if (sessionPromiseRef.current) {
-              sessionPromiseRef.current.then(session => {
-                session.send({ parts: [{ text: `La session est ouverte pour ${duration} minutes. Salue l'étudiant et commence l'exercice immédiatement.` }] });
-              });
-            }
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            if (message.toolCall) {
-               const functionCalls = message.toolCall.functionCalls;
-               if (functionCalls && functionCalls.length > 0) {
-                 const call = functionCalls[0];
-                 if (call.name === 'displayCorrection') {
-                   const correctionData = call.args as unknown as Correction;
-                   console.log("📝 Correction reçue:", correctionData);
-                   setAllCorrections(prev => [...prev, correctionData]);
-                   addCorrectionToToolbox(correctionData);
-
-                   if (sessionPromiseRef.current) {
-                     sessionPromiseRef.current.then(session => {
-                       session.send({
-                         toolResponse: {
-                           functionResponses: [{
-                             name: 'displayCorrection',
-                             response: { success: true }
-                           }]
-                         }
-                       });
-                     }).catch(console.error);
-                   }
-                 }
-               }
-            }
-
-            if (message.serverContent?.modelTurn?.parts) {
-              for (const part of message.serverContent.modelTurn.parts) {
-                if (part.inlineData?.mimeType?.startsWith("audio/")) {
-                  const audioData = base64ToBytes(part.inlineData.data);
-                  try {
-                    const audioBuffer = await outputCtx.decodeAudioData(audioData.buffer);
-                    const source = outputCtx.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(outputNode);
-                    
-                    const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
-                    source.start(startTime);
-                    nextStartTimeRef.current = startTime + audioBuffer.duration;
-                    
-                    sourcesRef.current.add(source);
-                    
-                    setIsAiSpeaking(true);
-                    source.onended = () => {
-                      sourcesRef.current.delete(source);
-                      if (sourcesRef.current.size === 0) {
-                        setIsAiSpeaking(false);
-                      }
-                    };
-                  } catch (err) {
-                    console.error("❌ Erreur décodage audio:", err);
-                  }
-                }
-              }
-            }
-          },
-          onerror: (error: any) => {
-            console.error("❌ Erreur Live API:", error);
-            setConnectionState(ConnectionState.ERROR);
-            setErrorMsg(error.message || "Erreur de connexion");
-          },
-          onclose: () => {
-            console.log("🔌 Connexion fermée");
-            stopAudioProcessing();
-            setConnectionState(ConnectionState.DISCONNECTED);
-          },
-        },
         systemInstruction: {
           parts: [{ text: week.systemPrompt }]
         },
@@ -300,10 +198,106 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         tools: [{ functionDeclarations: [correctionTool] }]
       };
 
-      console.log("🚀 Démarrage session Live API avec outil correction");
-      sessionPromiseRef.current = ai.live.connect(config);
-      
-      await sessionPromiseRef.current;
+      console.log("🚀 Démarrage session Live API");
+      const session = await ai.live.connect(config);
+      sessionRef.current = session;
+
+      // Setup audio input
+      const source = inputCtx.createMediaStreamSource(stream);
+      const analyzer = inputCtx.createAnalyser();
+      analyzer.fftSize = 256;
+      source.connect(analyzer);
+      analyzerRef.current = analyzer;
+      updateVolume();
+
+      const processor = inputCtx.createScriptProcessor(4096, 1, 1);
+      scriptProcessorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        if (isMicMuted || !sessionRef.current) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcmBlob = createPCM16Blob(inputData);
+        try {
+          sessionRef.current.sendRealtimeInput({ media: pcmBlob });
+        } catch (err) {
+          console.error("Erreur envoi audio:", err);
+        }
+      };
+
+      source.connect(processor);
+      processor.connect(inputCtx.destination);
+
+      // Message handlers
+      session.on('message', async (message: LiveServerMessage) => {
+        if (message.toolCall) {
+           const functionCalls = message.toolCall.functionCalls;
+           if (functionCalls && functionCalls.length > 0) {
+             const call = functionCalls[0];
+             if (call.name === 'displayCorrection') {
+               const correctionData = call.args as unknown as Correction;
+               console.log("📝 Correction reçue:", correctionData);
+               setAllCorrections(prev => [...prev, correctionData]);
+               addCorrectionToToolbox(correctionData);
+
+               try {
+                 sessionRef.current.sendToolResponse({
+                   functionResponses: [{
+                     name: 'displayCorrection',
+                     response: { success: true }
+                   }]
+                 });
+               } catch (err) {
+                 console.error("Erreur tool response:", err);
+               }
+             }
+           }
+        }
+
+        if (message.serverContent?.modelTurn?.parts) {
+          for (const part of message.serverContent.modelTurn.parts) {
+            if (part.inlineData?.mimeType?.startsWith("audio/")) {
+              const audioData = base64ToBytes(part.inlineData.data);
+              try {
+                const audioBuffer = await outputCtx.decodeAudioData(audioData.buffer);
+                const source = outputCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(outputNode);
+                
+                const startTime = Math.max(outputCtx.currentTime, nextStartTimeRef.current);
+                source.start(startTime);
+                nextStartTimeRef.current = startTime + audioBuffer.duration;
+                
+                sourcesRef.current.add(source);
+                
+                setIsAiSpeaking(true);
+                source.onended = () => {
+                  sourcesRef.current.delete(source);
+                  if (sourcesRef.current.size === 0) {
+                    setIsAiSpeaking(false);
+                  }
+                };
+              } catch (err) {
+                console.error("❌ Erreur décodage audio:", err);
+              }
+            }
+          }
+        }
+      });
+
+      session.on('error', (error: any) => {
+        console.error("❌ Erreur Live API:", error);
+        setConnectionState(ConnectionState.ERROR);
+        setErrorMsg(error.message || "Erreur de connexion");
+      });
+
+      session.on('close', () => {
+        console.log("🔌 Connexion fermée");
+        stopAudioProcessing();
+        setConnectionState(ConnectionState.DISCONNECTED);
+      });
+
+      setConnectionState(ConnectionState.CONNECTED);
+      console.log("✅ Session connectée");
       
     } catch (error) {
       console.error("❌ Erreur startSession:", error);
@@ -315,15 +309,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   const endSession = useCallback(() => {
     console.log("🔚 Arrêt manuel de la session");
-    if (sessionPromiseRef.current) {
-      sessionPromiseRef.current.then(session => {
-        try {
-          session.disconnect();
-        } catch (e) {
-          console.error("Erreur disconnect:", e);
-        }
-      }).catch(console.error);
-      sessionPromiseRef.current = null;
+    if (sessionRef.current) {
+      try {
+        sessionRef.current.close();
+      } catch (e) {
+        console.error("Erreur fermeture session:", e);
+      }
+      sessionRef.current = null;
     }
     stopAudioProcessing();
     setConnectionState(ConnectionState.DISCONNECTED);
@@ -336,14 +328,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     };
   }, [endSession]);
 
-  // ✅ Formater le temps restant
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ✅ ÉCRAN SÉLECTION DURÉE
+  // ÉCRAN SÉLECTION DURÉE
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white">
@@ -406,7 +397,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white relative overflow-hidden">
-      {/* Notification Boîte à Outils */}
       {showToolboxNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -416,7 +406,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
 
-      {/* Header avec timer */}
       <header className="relative z-10 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
@@ -431,7 +420,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             </div>
           </div>
           
-          {/* ✅ Timer */}
           <div className="flex items-center gap-4">
             <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
               <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
@@ -452,10 +440,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </p>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-4 flex flex-col">
-        
-      {/* Zone centrale avec visualiseur */}
       <div className="flex-1 flex items-center justify-center">
         {connectionState === ConnectionState.CONNECTING && (
           <div className="flex flex-col items-center gap-4 animate-pulse">
@@ -469,7 +454,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-lg">{errorMsg}</span>
+            <span className="text-lg text-center px-4">{errorMsg}</span>
             <button onClick={() => setShowDurationSelector(true)} className="mt-4 px-6 py-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors">
               Réessayer
             </button>
@@ -514,7 +499,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         )}
       </div>
 
-      {/* Zone des corrections */}
       {allCorrections.length > 0 && (
         <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto rounded-t-lg">
           <div className="flex justify-between items-center mb-3">
