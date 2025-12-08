@@ -42,7 +42,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
-  const [lastCorrection, setLastCorrection] = useState<Correction | null>(null);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   
   // ✅ NOUVEAU : État pour notification ajout Boîte à Outils
@@ -138,7 +137,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     try {
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
-      setLastCorrection(null);
 
       const apiKey = import.meta.env.VITE_API_KEY;
       if (!apiKey) throw new Error("VITE_API_KEY manquante dans .env.local");
@@ -211,7 +209,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
                    console.log("📝 Correction reçue:", correctionData);
-                   setLastCorrection(correctionData);
                    setAllCorrections(prev => [...prev, correctionData]);
                    
                    // ✅ NOUVEAU : Ajouter automatiquement à la Boîte à Outils
@@ -367,13 +364,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             Terminer
           </button>
         </div>
-        <p className="text-sm text-gray-600">
-          <span className="font-semibold text-gray-900">Objectif :</span> {week.description}
+        <p className="text-sm text-gray-400">
+          <span className="font-semibold text-gray-300">Objectif :</span> {week.description}
         </p>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
+      <main className="flex-1 overflow-y-auto p-4 flex flex-col">
         
       {/* Zone centrale avec visualiseur */}
       <div className="flex-1 flex items-center justify-center">
@@ -450,7 +447,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       {/* Zone des corrections en bas */}
       {allCorrections.length > 0 && (
-        <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+        <div className="bg-white border-t border-gray-200 p-4 max-h-64 overflow-y-auto rounded-t-lg">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-bold text-gray-800 uppercase">📝 Corrections ({allCorrections.length})</h3>
             <button
@@ -501,15 +498,15 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       </main>
 
       {/* Footer avec contrôles */}
-      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
+      <footer className="relative z-10 bg-gray-900/50 backdrop-blur-sm border-t border-gray-700 p-4">
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={() => setIsMicMuted(!isMicMuted)}
             disabled={connectionState !== ConnectionState.CONNECTED}
             className={`p-4 rounded-full transition-all ${
               isMicMuted 
-                ? 'bg-gray-200 text-gray-500 hover:bg-gray-300' 
-                : 'bg-brand-green text-white hover:bg-green-600 shadow-md'
+                ? 'bg-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'bg-brand-green text-white hover:bg-green-600 shadow-lg shadow-brand-green/30'
             } disabled:opacity-30 disabled:cursor-not-allowed`}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
