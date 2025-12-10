@@ -310,9 +310,7 @@ const sendMessage = async (userMessage: string) => {
       <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 font-sans">
         <header className="p-6 bg-white border-b border-gray-200">
           <div className="flex items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
-              LC
-            </div>
+            <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
             <h1 className="text-3xl font-bold text-gray-800">
               Lingua<span className="text-brand-green">Compagnon</span>
             </h1>
@@ -332,7 +330,7 @@ const sendMessage = async (userMessage: string) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
             {/* ✅ MODE ÉCRIT */}
             <button
               onClick={() => handleModeSelect('ecrit')}
@@ -353,6 +351,27 @@ const sendMessage = async (userMessage: string) => {
                 <li>✓ Lecture audio optionnelle</li>
               </ul>
             </button>
+
+            {/* ✅ MODE ORAL */}
+<button
+  onClick={() => handleModeSelect('oral')}
+  className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
+>
+  <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
+    <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+  </div>
+  <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Oral</h3>
+  <p className="text-gray-600 text-center mb-4">
+    Conversation vocale en temps réel avec François
+  </p>
+  <ul className="text-sm text-gray-500 space-y-2 text-left">
+    <li>✓ Pratique de la prononciation</li>
+    <li>✓ Feedback immédiat</li>
+    <li>✓ Boîte à outils intégrée</li>
+  </ul>
+</button>
           </div>
         </main>
       </div>
@@ -427,7 +446,37 @@ const sendMessage = async (userMessage: string) => {
       </div>
     );
   }
-
+ // ====== MODE BOÎTE À OUTILS ======
+  if (conversationMode === 'toolbox') {
+    return (
+      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+        <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">
+                  Lingua<span className="text-brand-green">Compagnon</span>
+                </h1>
+                <p className="text-xs text-gray-500">Boîte à Outils</p>
+              </div>
+            </div>
+            <button
+              onClick={handleBackToModeSelector}
+              className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              ← Changer de mode
+            </button>
+          </div>
+        </header>
+        
+        <main className="flex-grow overflow-y-auto">
+          <ToolBox />
+        </main>
+      </div>
+    );
+  }
+  
   // ====== MODE ORAL ======
   if (conversationMode === 'oral') {
     return (
@@ -447,9 +496,7 @@ const sendMessage = async (userMessage: string) => {
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-             <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." />
-            </div>
+            <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
                 Lingua<span className="text-brand-green">Compagnon</span>
