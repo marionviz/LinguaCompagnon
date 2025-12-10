@@ -475,7 +475,10 @@ function App() {
     return (
       <LiveTutorOral 
         weekNumber={currentWeek}
-        onClose={handleBackToModeSelector}
+        onClose={() => {
+        setConversationMode('toolbox');
+        setShowModeSelector(false);
+        }}
       />
     );
   }
@@ -488,7 +491,7 @@ function App() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm">
-                LC
+                <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">

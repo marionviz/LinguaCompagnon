@@ -323,7 +323,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         <header className="p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">LC</div>
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"><img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." /></div>
               <div>
                 <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
                 <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
@@ -372,7 +372,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">LC</div>
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"><img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." /></div>
             <div>
               <h1 className="text-xl font-bold text-gray-800">Lingua<span className="text-brand-green">Compagnon</span></h1>
               <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
@@ -472,28 +472,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
       </main>
-
-      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setIsMicMuted(!isMicMuted)}
-            disabled={connectionState !== ConnectionState.CONNECTED}
-            className={`p-4 rounded-full transition-all ${
-              isMicMuted 
-                ? 'bg-gray-200 text-gray-500 hover:bg-gray-300' 
-                : 'bg-brand-green text-white hover:bg-green-600 shadow-md'
-            } disabled:opacity-30 disabled:cursor-not-allowed`}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {isMicMuted ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              )}
-            </svg>
-          </button>
-        </div>
-      </footer>
     </div>
   );
 };
