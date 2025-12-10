@@ -11,18 +11,132 @@ export const ToolBox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const { data, addItem, removeItem, updateItem, reviewItem, getByCategory, exportData } = useToolBox();
 
-  const handleExport = () => {
-    const jsonData = exportData();
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `boite-a-outils-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+const handleExport = () => {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const timeStr = now.toLocaleTimeString('fr-FR', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  let content = `═══════════════════════════════════════════════════
+   MA BOÎTE À OUTILS - LINGUACOMPAGNON
+═══════════════════════════════════════════════════
+
+📅 Exporté le : ${dateStr} à ${timeStr}
+
+═══════════════════════════════════════════════════
+   STATISTIQUES GÉNÉRALES
+═══════════════════════════════════════════════════
+
+📦 Total d'éléments ajoutés : ${data.totalItemsAdded}
+💡 Stratégies découvertes : ${data.strategies.length}
+✅ Révisions effectuées : ${data.items.reduce((sum, item) => sum + item.reviewCount, 0)}
+
+📊 Par catégorie :
+   • Grammaire : ${data.categoryCounts.grammar}
+   • Vocabulaire : ${data.categoryCounts.vocabulary}
+   • Conjugaison : ${data.categoryCounts.conjugation}
+   • Prononciation : ${data.categoryCounts.pronunciation}
+   • Stratégies : ${data.categoryCounts.strategy}
+
+`;
+
+  // Trier les items par catégorie
+  const itemsByCategory = {
+    grammar: data.items.filter(item => item.category === 'grammar'),
+    vocabulary: data.items.filter(item => item.category === 'vocabulary'),
+    conjugation: data.items.filter(item => item.category === 'conjugation'),
+    pronunciation: data.items.filter(item => item.category === 'pronunciation'),
+    strategy: data.items.filter(item => item.category === 'strategy'),
   };
+
+  const categoryLabels = {
+    grammar: '📐 GRAMMAIRE',
+    vocabulary: '📚 VOCABULAIRE',
+    conjugation: '🔄 CONJUGAISON',
+    pronunciation: '🗣️ PRONONCIATION',
+    strategy: '💡 STRATÉGIES',
+  };
+
+  // Ajouter chaque catégorie
+  Object.entries(itemsByCategory).forEach(([category, items]) => {
+    if (items.length === 0) return;
+
+    content += `\n═══════════════════════════════════════════════════\n`;
+    content += `   ${categoryLabels[category as keyof typeof categoryLabels]}\n`;
+    content += `═══════════════════════════════════════════════════\n\n`;
+
+    items.forEach((item, index) => {
+      content += `[${index + 1}] ${item.title}\n`;
+      content += `${'─'.repeat(50)}\n`;
+      content += `📝 Description : ${item.description}\n`;
+      
+      if (item.example) {
+        content += `\n💬 Exemple :\n${item.example}\n`;
+      }
+      
+      if (item.errorContext) {
+        content += `\n🎯 Contexte : ${item.errorContext}\n`;
+      }
+
+      if (item.practicePrompt) {
+        content += `\n✏️ Exercice : ${item.practicePrompt}\n`;
+      }
+
+      const addedDate = new Date(item.addedDate).toLocaleDateString('fr-FR');
+      content += `\n📅 Ajouté le : ${addedDate}\n`;
+      content += `🔁 Nombre de révisions : ${item.reviewCount}\n`;
+      
+      if (item.lastReviewed) {
+        const reviewDate = new Date(item.lastReviewed).toLocaleDateString('fr-FR');
+        content += `🕐 Dernière révision : ${reviewDate}\n`;
+      }
+
+      content += `\n`;
+    });
+  });
+
+  // Ajouter les stratégies d'apprentissage
+  if (data.strategies.length > 0) {
+    content += `\n═══════════════════════════════════════════════════\n`;
+    content += `   🧠 STRATÉGIES D'APPRENTISSAGE\n`;
+    content += `═══════════════════════════════════════════════════\n\n`;
+
+    data.strategies.forEach((strategy, index) => {
+      content += `[${index + 1}] ${strategy.name}\n`;
+      content += `${'─'.repeat(50)}\n`;
+      content += `📝 ${strategy.description}\n`;
+      
+      if (strategy.example) {
+        content += `\n💬 Exemple : ${strategy.example}\n`;
+      }
+
+      const discoveredDate = new Date(strategy.discoveredDate).toLocaleDateString('fr-FR');
+      content += `\n📅 Découverte le : ${discoveredDate}\n`;
+      content += `📊 Utilisée ${strategy.timesUsed} fois\n\n`;
+    });
+  }
+
+  content += `\n═══════════════════════════════════════════════════\n`;
+  content += `   FIN DU DOCUMENT\n`;
+  content += `═══════════════════════════════════════════════════\n`;
+
+  // Créer et télécharger le fichier
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `boite-a-outils-${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
   const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
   
