@@ -365,7 +365,7 @@ const sendMessage = async (userMessage: string) => {
   </div>
   <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Oral</h3>
   <p className="text-gray-600 text-center mb-4">
-    Conversation vocale en temps réel avec l'avatar de François
+    Conversation vocale avec l'avatar de François
   </p>
   <ul className="text-sm text-gray-500 space-y-2 text-left">
     <li>✓ Pratique de la prononciation</li>
