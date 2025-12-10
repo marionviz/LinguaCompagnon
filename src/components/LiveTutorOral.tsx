@@ -4,6 +4,7 @@ import { ConnectionState, Correction } from '../typesOral';
 import { createPCM16Blob, base64ToBytes, decodeAudioData } from '../utils/audioUtilsLive';
 import { GEMINI_MODEL_LIVE, getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
+import { ToolBox } from './ToolBox/ToolBox';
 
 interface LiveTutorOralProps {
   weekNumber: number;
@@ -38,6 +39,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
+  const [showToolbox, setShowToolbox] = useState(false);
   
   // ✅ NOUVEAU : Boîte à outils
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
@@ -472,6 +474,30 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         </div>
       )}
       </main>
+
+      {/* Pavé Boîte à outils */}
+<div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg">
+  <button
+    onClick={() => setShowToolbox(!showToolbox)}
+    className="w-full flex items-center justify-between px-4 py-3 bg-brand-green hover:bg-green-700 text-white rounded-lg transition-colors"
+  >
+    <div className="flex items-center gap-3">
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+      <span className="font-semibold">Ma Boîte à Outils</span>
+    </div>
+    <svg className={`w-5 h-5 transition-transform ${showToolbox ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  {showToolbox && (
+    <div className="mt-4">
+      <ToolBox />
+    </div>
+  )}
+</div>
     </div>
   );
 };
