@@ -325,7 +325,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/public/francois.png" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+            <img src="/public/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
                 Lingua<span className="text-brand-green">Compagnon</span>
