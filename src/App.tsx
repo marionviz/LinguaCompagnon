@@ -68,7 +68,7 @@ function App() {
         const firstMessage: ChatMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en appliquant ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer ! Comment allez-vous aujourd'hui ?`,
+            text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer, c'est d'accord ?`,
         };
         setMessages([firstMessage]);
         setIsLoading(false);
