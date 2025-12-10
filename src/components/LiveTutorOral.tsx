@@ -320,45 +320,59 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   // ✅ ÉCRAN SÉLECTEUR
   if (showDurationSelector) {
-    return (
-      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans text-white">
-        <header className="p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"><img src="/public/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-lg object-cover" /></div>
-              <div>
-                <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-                <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
-              </div>
+  return (
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/francois.png" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                Lingua<span className="text-brand-green">Compagnon</span>
+              </h1>
+              <p className="text-xs text-gray-500">Mode Oral - Semaine {week.id}</p>
             </div>
-            <button onClick={onClose} className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors">← Retour</button>
           </div>
-        </header>
+          <button onClick={onClose} className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-600 rounded-lg transition-colors">
+            ← Retour
+          </button>
+        </div>
+      </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Combien de temps voulez-vous pratiquer ?</h2>
-            <p className="text-gray-400 text-lg">Choisissez la durée de votre conversation avec François</p>
-          </div>
+      <main className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            Combien de temps voulez-vous pratiquer ?
+          </h2>
+          <p className="text-gray-600 text-lg">
+            Choisissez la durée de votre conversation avec François
+          </p>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
-            {[2, 5, 8, 10].map((duration) => (
-              <button
-                key={duration}
-                onClick={() => startSession(duration)}
-                className="group p-8 bg-gray-800 border-2 border-gray-700 rounded-xl hover:border-brand-green hover:bg-gray-700 transition-all duration-300 flex flex-col items-center gap-3"
-              >
-                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">{duration}</div>
-                <div className="text-sm text-gray-400 group-hover:text-white transition-colors">minute{duration > 1 ? 's' : ''}</div>
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
+          {[2, 5, 8, 10].map((duration) => (
+            <button
+              key={duration}
+              onClick={() => startSession(duration)}
+              className="group p-8 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 flex flex-col items-center gap-3"
+            >
+              <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">
+                {duration}
+              </div>
+              <div className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+                minute{duration > 1 ? 's' : ''}
+              </div>
+            </button>
+          ))}
+        </div>
 
-          <div className="mt-8 text-center text-gray-500 text-sm">💡 Conseil : Commencez par 2-5 minutes pour vous familiariser</div>
-        </main>
-      </div>
-    );
-  }
+        <div className="mt-8 text-center text-gray-500 text-sm">
+          💡 Conseil : Commencez par 2-5 minutes pour vous familiariser
+        </div>
+      </main>
+    </div>
+  );
+}
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
