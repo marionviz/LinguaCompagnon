@@ -270,7 +270,7 @@ const handleExport = () => {
           <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
           <li>✓ Cliquez sur "J'ai révisé" pour suivre vos progrès</li>
           <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
-          <li>✓ Exportez vos données en JSON pour les sauvegarder</li>
+          <li>✓ Exportez vos données en .txt pour les sauvegarder</li>
         </ul>
       </div>
     </div>
