@@ -311,7 +311,7 @@ const sendMessage = async (userMessage: string) => {
       <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 font-sans">
         <header className="p-6 bg-white border-b border-gray-200">
           <div className="flex items-center justify-center gap-3">
-            <img src="/public/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
+            <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
             <h1 className="text-3xl font-bold text-gray-800">
               Lingua<span className="text-brand-green">Compagnon</span>
             </h1>
@@ -454,7 +454,7 @@ const sendMessage = async (userMessage: string) => {
         <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="public/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
+              <img src="/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
               <div>
                 <h1 className="text-xl font-bold text-gray-800">
                   Lingua<span className="text-brand-green">Compagnon</span>
