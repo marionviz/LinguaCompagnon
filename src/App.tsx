@@ -167,7 +167,7 @@ function App() {
         const welcomeMessage: ChatMessage = {
           id: `model-${Date.now()}`,
           role: 'model',
-          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. 
+          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours.  
           Nous sommes en semaine ${week}. Commençons à pratiquer, c'est d'accord ?`,
         };
         setMessages([welcomeMessage]);
@@ -317,7 +317,7 @@ const sendMessage = async (userMessage: string) => {
             </h1>
           </div>
           <p className="text-center text-gray-600 mt-2">
-            Votre assistant personnel pour pratiquer le français
+            Votre assistant personnel IA pour pratiquer le français
           </p>
         </header>
 
@@ -365,7 +365,7 @@ const sendMessage = async (userMessage: string) => {
   </div>
   <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Oral</h3>
   <p className="text-gray-600 text-center mb-4">
-    Conversation vocale en temps réel avec François
+    Conversation vocale en temps réel avec l'avatar de François
   </p>
   <ul className="text-sm text-gray-500 space-y-2 text-left">
     <li>✓ Pratique de la prononciation</li>
