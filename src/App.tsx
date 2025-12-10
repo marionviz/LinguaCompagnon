@@ -207,47 +207,52 @@ function App() {
     setShowOralWeekSelector(false);
   };
 
-  const sendMessage = async (userMessage: string) => {
-    if (!chatRef.current || isLoading) {
-      console.log('⚠️ Chat pas prêt ou en cours de chargement');
-      return;
-    }
+const sendMessage = async (userMessage: string) => {
+  if (!chatRef.current || isLoading) {
+    console.log('⚠️ Chat pas prêt ou en cours de chargement');
+    return;
+  }
 
-    console.log('💬 Envoi du message:', userMessage);
+  console.log('💬 Envoi du message:', userMessage);
+  
+  const userMsg: ChatMessage = {
+    id: `user-${Date.now()}`,
+    role: 'user',
+    text: userMessage,
+  };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    console.log('📤 Envoi au modèle...');
+    const result = await chatRef.current.sendMessage(userMessage);
+    console.log('📥 Réponse reçue');
     
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text: userMessage,
+    const response = await result.response;
+    const text = response.text();
+    console.log('✅ Texte extrait:', text.substring(0, 100) + '...');
+    
+    // ✅ NOUVEAU : Détecter et supprimer le marqueur [PRATIQUE]
+    const hasPracticeMarker = text.includes('[PRATIQUE]');
+    const cleanedText = text.replace(/\[PRATIQUE\]/g, '').trim();
+    
+    const modelMsg: ChatMessage = {
+      id: `model-${Date.now()}`,
+      role: 'model',
+      text: cleanedText,  // ✅ Texte nettoyé
+      hasPractice: hasPracticeMarker  // ✅ true si [PRATIQUE] détecté
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log('📤 Envoi au modèle...');
-      const result = await chatRef.current.sendMessage(userMessage);
-      console.log('📥 Réponse reçue');
-      
-      const response = await result.response;
-      const text = response.text();
-      console.log('✅ Texte extrait:', text.substring(0, 100) + '...');
-      
-      const modelMsg: ChatMessage = {
-        id: `model-${Date.now()}`,
-        role: 'model',
-        text,
-      };
-
-      setMessages((prev) => [...prev, modelMsg]);
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'envoi du message:', error);
-      setError(`Erreur lors de la communication avec le chatbot: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setMessages((prev) => [...prev, modelMsg]);
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi du message:', error);
+    setError(`Erreur lors de la communication avec le chatbot: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSpeak = (text: string, messageId: string) => {
     if (window.speechSynthesis.speaking) {
