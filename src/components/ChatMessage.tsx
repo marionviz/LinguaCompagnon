@@ -52,22 +52,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onPractice,
           </div>
         </div>
         {isModel && message.text && (
-          <div className="flex items-center gap-2 mt-2 px-1">
-            <button
-              onClick={() => onSpeak(message.text, message.id)}
-              aria-label="Écouter le message"
-              className={`p-1.5 rounded-full transition-colors ${isSpeaking ? 'text-brand-green bg-green-100' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
-            >
-              <SpeakerWaveIcon className="w-5 h-5" />
-            </button>
-            {message.hasPractice && (
-              <button
-                onClick={() => onPractice(message.id)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold rounded-lg transition-all shadow-md hover:shadow-lg active:scale-95"
-              >
-                <PencilIcon className="w-5 h-5" />
-                Je veux pratiquer
-              </button>
+  <div className="flex items-center gap-2 mt-2 px-1">
+    <button
+      onClick={() => onSpeak(message.text, message.id)}
+      aria-label="Écouter le message"
+      className={`p-1.5 rounded-full transition-colors ${isSpeaking ? 'text-brand-green bg-green-100' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
+    >
+      <SpeakerWaveIcon className="w-5 h-5" />
+    </button>
+    {message.hasPractice && (
+      <button
+        onClick={() => onPractice(message.id)}
+        className="flex items-center gap-2 px-4 py-2 bg-brand-green hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all shadow-md hover:shadow-lg active:scale-95"
+      >
+        <PencilIcon className="w-5 h-5" />
+        Je veux pratiquer
+      </button>
             )}
           </div>
         )}
