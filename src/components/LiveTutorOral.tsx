@@ -325,7 +325,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         <header className="p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"><img src="/public/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." /></div>
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"><img src="/public/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-lg object-cover" /></div>
               <div>
                 <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
                 <p className="text-xs text-gray-400">Mode Oral - Semaine {week.id}</p>
@@ -374,7 +374,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"><img src="/public/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-..." /></div>
+            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"><img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" /></div>
             <div>
               <h1 className="text-xl font-bold text-gray-800">Lingua<span className="text-brand-green">Compagnon</span></h1>
               <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>

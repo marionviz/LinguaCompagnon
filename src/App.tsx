@@ -343,7 +343,7 @@ const sendMessage = async (userMessage: string) => {
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Écrit</h3>
               <p className="text-gray-600 text-center mb-4">
-                Conversation textuelle avec Marion, votre tutrice IA
+                Conversation textuelle avec l'avatar de Marion
               </p>
               <ul className="text-sm text-gray-500 space-y-2 text-left">
                 <li>✓ Corrections visuelles</li>
@@ -496,7 +496,7 @@ const sendMessage = async (userMessage: string) => {
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <img src="/public/LC_chat2.png" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
+           <img src="/public/avatar.jpg" alt="Marion" className="w-10 h-10 rounded-full shadow-sm object-cover" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
                 Lingua<span className="text-brand-green">Compagnon</span>
