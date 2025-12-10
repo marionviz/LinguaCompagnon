@@ -167,7 +167,8 @@ function App() {
         const welcomeMessage: ChatMessage = {
           id: `model-${Date.now()}`,
           role: 'model',
-          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. Nous sommes en semaine ${week}. Commençons à pratiquer, c'est d'accord ?`,
+          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. 
+          <br>Nous sommes en semaine ${week}. Commençons à pratiquer, c'est d'accord ?`,
         };
         setMessages([welcomeMessage]);
         setIsLoading(false);
