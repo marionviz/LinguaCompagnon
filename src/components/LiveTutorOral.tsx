@@ -34,7 +34,7 @@ const correctionTool: FunctionDeclaration = {
         description: "Le type d'erreur détecté",
         enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
       },
-      mispronounced Word: {
+      mispronouncedWord: {
         type: Type.STRING,
         description: "Pour les erreurs de prononciation : le ou les mots mal prononcés (ex: 'suis', 'été', 'beaucoup'). Laisser vide pour les autres types d'erreurs."
       }
@@ -93,7 +93,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }, [selectedDuration, connectionState, timeRemaining]);
 
   // ✅ Boîte à outils
-const addCorrectionToToolbox = useCallback((correction: Correction & { errorType?: string; mispronounced Word?: string }) => {
+const addCorrectionToToolbox = useCallback((correction: Correction & { errorType?: string; mispronouncedWord?: string }) => {
   // ✅ PRIORITÉ 1 : Utiliser errorType si fourni par l'IA
   let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
   
@@ -129,16 +129,16 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
     : correction.explanation;
 
   // ✅ Pour prononciation : ajouter le mot mal prononcé dans le titre si disponible
-  if (category === 'pronunciation' && correction.mispronounced Word) {
-    title = `Prononciation : "${correction.mispronounced Word}"`;
+  if (category === 'pronunciation' && correction.mispronouncedWord) {
+    title = `Prononciation : "${correction.mispronouncedWord}"`;
   }
 
   // ✅ Construire l'exemple
   let example = `❌ ${correction.originalSentence}\n✅ ${correction.correctedSentence}`;
   
   // ✅ Pour prononciation : indiquer explicitement le mot problématique
-  if (category === 'pronunciation' && correction.mispronounced Word) {
-    example = `🗣️ Mot mal prononcé : "${correction.mispronounced Word}"\n\n` +
+  if (category === 'pronunciation' && correction.mispronouncedWord) {
+    example = `🗣️ Mot mal prononcé : "${correction.mispronouncedWord}"\n\n` +
               `❌ Vous avez dit : ${correction.originalSentence}\n` +
               `✅ Prononciation correcte : ${correction.correctedSentence}`;
   }
