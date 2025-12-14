@@ -13,15 +13,33 @@ interface LiveTutorOralProps {
 
 const correctionTool: FunctionDeclaration = {
   name: "displayCorrection",
-  description: "Affiche une correction écrite sur l'écran. À utiliser quand l'apprenant fait une erreur de grammaire ou de vocabulaire importante.",
+  description: "Affiche une correction écrite sur l'écran. À utiliser pour TOUTES les erreurs importantes : grammaire, vocabulaire, conjugaison ET prononciation. IMPORTANT : Si l'apprenant prononce mal un mot mais l'écrit correctement (phrases identiques à l'écrit), c'est une erreur de PRONONCIATION.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      originalSentence: { type: Type.STRING, description: "La phrase exacte dite par l'utilisateur avec l'erreur." },
-      correctedSentence: { type: Type.STRING, description: "La version corrigée de la phrase." },
-      explanation: { type: Type.STRING, description: "Une explication très brève (max 10 mots) de l'erreur." },
+      originalSentence: { 
+        type: Type.STRING, 
+        description: "La phrase exacte transcrite de ce que l'utilisateur a dit (peut contenir des erreurs d'orthographe si mal prononcé)." 
+      },
+      correctedSentence: { 
+        type: Type.STRING, 
+        description: "La version correcte de la phrase (orthographe correcte)." 
+      },
+      explanation: { 
+        type: Type.STRING, 
+        description: "Une explication très brève de l'erreur. TOUJOURS commencer par le type : 'Prononciation :', 'Grammaire :', 'Vocabulaire :', ou 'Conjugaison :' suivi de l'explication (max 15 mots)." 
+      },
+      errorType: {
+        type: Type.STRING,
+        description: "Le type d'erreur détecté",
+        enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
+      },
+      mispronounced Word: {
+        type: Type.STRING,
+        description: "Pour les erreurs de prononciation : le ou les mots mal prononcés (ex: 'suis', 'été', 'beaucoup'). Laisser vide pour les autres types d'erreurs."
+      }
     },
-    required: ["originalSentence", "correctedSentence", "explanation"],
+    required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
   },
 };
 
@@ -75,33 +93,67 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }, [selectedDuration, connectionState, timeRemaining]);
 
   // ✅ Boîte à outils
-  const addCorrectionToToolbox = useCallback((correction: Correction) => {
-    let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
+const addCorrectionToToolbox = useCallback((correction: Correction & { errorType?: string; mispronounced Word?: string }) => {
+  // ✅ PRIORITÉ 1 : Utiliser errorType si fourni par l'IA
+  let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
+  
+  if (correction.errorType) {
+    // L'IA a explicitement dit le type d'erreur
+    category = correction.errorType as any;
+  } else {
+    // ✅ PRIORITÉ 2 : Détecter par le contenu de l'explication
     const explanation = correction.explanation.toLowerCase();
     
-    if (explanation.includes('conjugaison') || explanation.includes('temps')) {
+    if (explanation.startsWith('prononciation') || explanation.includes('prononciation :') || 
+        explanation.includes('mal prononcé') || explanation.includes('son ')) {
+      category = 'pronunciation';
+    } else if (explanation.startsWith('conjugaison') || explanation.includes('conjugaison :') || 
+               explanation.includes('temps ')) {
       category = 'conjugation';
-    } else if (explanation.includes('vocabulaire') || explanation.includes('mot')) {
+    } else if (explanation.startsWith('vocabulaire') || explanation.includes('vocabulaire :') || 
+               explanation.includes('mot ')) {
       category = 'vocabulary';
-    } else if (explanation.includes('prononciation') || explanation.includes('son')) {
+    } else if (explanation.startsWith('grammaire') || explanation.includes('grammaire :')) {
+      category = 'grammar';
+    }
+    
+    // ✅ PRIORITÉ 3 : Si phrases identiques à l'écrit → c'est de la prononciation
+    if (correction.originalSentence.toLowerCase().trim() === correction.correctedSentence.toLowerCase().trim()) {
       category = 'pronunciation';
     }
+  }
 
-    const title = correction.explanation.length > 50 
-      ? correction.explanation.substring(0, 50) + '...'
-      : correction.explanation;
+  // ✅ Construire le titre selon la catégorie
+  let title = correction.explanation.length > 50 
+    ? correction.explanation.substring(0, 50) + '...'
+    : correction.explanation;
 
-    addItem({
-      category,
-      title,
-      description: correction.explanation,
-      example: `❌ ${correction.originalSentence}\n✅ ${correction.correctedSentence}`,
-      errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
-    });
+  // ✅ Pour prononciation : ajouter le mot mal prononcé dans le titre si disponible
+  if (category === 'pronunciation' && correction.mispronounced Word) {
+    title = `Prononciation : "${correction.mispronounced Word}"`;
+  }
 
-    setShowToolboxNotification(true);
-    setTimeout(() => setShowToolboxNotification(false), 3000);
-  }, [addItem, weekNumber]);
+  // ✅ Construire l'exemple
+  let example = `❌ ${correction.originalSentence}\n✅ ${correction.correctedSentence}`;
+  
+  // ✅ Pour prononciation : indiquer explicitement le mot problématique
+  if (category === 'pronunciation' && correction.mispronounced Word) {
+    example = `🗣️ Mot mal prononcé : "${correction.mispronounced Word}"\n\n` +
+              `❌ Vous avez dit : ${correction.originalSentence}\n` +
+              `✅ Prononciation correcte : ${correction.correctedSentence}`;
+  }
+
+  addItem({
+    category,
+    title,
+    description: correction.explanation,
+    example,
+    errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
+  });
+
+  setShowToolboxNotification(true);
+  setTimeout(() => setShowToolboxNotification(false), 3000);
+}, [addItem, weekNumber]);
 
   const stopAudioProcessing = useCallback(() => {
     sourcesRef.current.forEach(source => {

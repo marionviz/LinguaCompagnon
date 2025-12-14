@@ -28,4 +28,6 @@ export interface Correction {
   originalSentence: string;
   correctedSentence: string;
   explanation: string;
+  errorType?: 'pronunciation' | 'grammar' | 'vocabulary' | 'conjugation';  // ✅ NOUVEAU
+  mispronounced Word?: string;  // ✅ NOUVEAU : mot(s) mal prononcé(s)
 }
