@@ -413,29 +413,29 @@ const sendMessage = async (userMessage: string) => {
               const weekTheme = getWeekThemes(week);
               return (
                 <button
-                  key={week}
-                  onClick={() => handleOralWeekSelect(week)}
-                  className="group relative p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 text-left"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-brand-green/10 group-hover:bg-brand-green flex items-center justify-center transition-colors">
-                      <span className="text-lg font-bold text-brand-green group-hover:text-white transition-colors">
-                        {week}
-                      </span>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
+                key={week}
+                onClick={() => handleOralWeekSelect(week)}
+                className="group relative p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 text-left"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-green/10 group-hover:bg-brand-green/20 flex items-center justify-center transition-colors">
+                    <span className="text-base font-bold text-brand-green transition-colors">
+                      {week}
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors line-clamp-2">
-                    {weekTheme}
-                  </p>
-                  <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-5 h-5 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
+                  <svg className="w-4 h-4 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <p className="text-xs leading-relaxed text-gray-600 group-hover:text-gray-800 transition-colors line-clamp-3">
+                  {weekTheme}
+                </p>
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-4 h-4 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                  </button>
               );
             })}
           </div>
