@@ -11,19 +11,19 @@ export const ToolBox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const { data, addItem, removeItem, updateItem, reviewItem, getByCategory, exportData } = useToolBox();
 
-const handleExport = () => {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('fr-FR', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  const timeStr = now.toLocaleTimeString('fr-FR', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
+  const handleExport = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-FR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const timeStr = now.toLocaleTimeString('fr-FR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
 
-  let content = `═══════════════════════════════════════════════════
+    let content = `═══════════════════════════════════════════════════
    MA BOÎTE À OUTILS - LINGUACOMPAGNON
 ═══════════════════════════════════════════════════
 
@@ -46,97 +46,97 @@ const handleExport = () => {
 
 `;
 
-  // Trier les items par catégorie
-  const itemsByCategory = {
-    grammar: data.items.filter(item => item.category === 'grammar'),
-    vocabulary: data.items.filter(item => item.category === 'vocabulary'),
-    conjugation: data.items.filter(item => item.category === 'conjugation'),
-    pronunciation: data.items.filter(item => item.category === 'pronunciation'),
-    strategy: data.items.filter(item => item.category === 'strategy'),
-  };
+    // Trier les items par catégorie
+    const itemsByCategory = {
+      grammar: data.items.filter(item => item.category === 'grammar'),
+      vocabulary: data.items.filter(item => item.category === 'vocabulary'),
+      conjugation: data.items.filter(item => item.category === 'conjugation'),
+      pronunciation: data.items.filter(item => item.category === 'pronunciation'),
+      strategy: data.items.filter(item => item.category === 'strategy'),
+    };
 
-  const categoryLabels = {
-    grammar: '📐 GRAMMAIRE',
-    vocabulary: '📚 VOCABULAIRE',
-    conjugation: '🔄 CONJUGAISON',
-    pronunciation: '🗣️ PRONONCIATION',
-    strategy: '💡 STRATÉGIES',
-  };
+    const categoryLabels = {
+      grammar: '📐 GRAMMAIRE',
+      vocabulary: '📚 VOCABULAIRE',
+      conjugation: '🔄 CONJUGAISON',
+      pronunciation: '🗣️ PRONONCIATION',
+      strategy: '💡 STRATÉGIES',
+    };
 
-  // Ajouter chaque catégorie
-  Object.entries(itemsByCategory).forEach(([category, items]) => {
-    if (items.length === 0) return;
+    // Ajouter chaque catégorie
+    Object.entries(itemsByCategory).forEach(([category, items]) => {
+      if (items.length === 0) return;
+
+      content += `\n═══════════════════════════════════════════════════\n`;
+      content += `   ${categoryLabels[category as keyof typeof categoryLabels]}\n`;
+      content += `═══════════════════════════════════════════════════\n\n`;
+
+      items.forEach((item, index) => {
+        content += `[${index + 1}] ${item.title}\n`;
+        content += `${'─'.repeat(50)}\n`;
+        content += `📝 Description : ${item.description}\n`;
+        
+        if (item.example) {
+          content += `\n💬 Exemple :\n${item.example}\n`;
+        }
+        
+        if (item.errorContext) {
+          content += `\n🎯 Contexte : ${item.errorContext}\n`;
+        }
+
+        if (item.practicePrompt) {
+          content += `\n✏️ Exercice : ${item.practicePrompt}\n`;
+        }
+
+        const addedDate = new Date(item.addedDate).toLocaleDateString('fr-FR');
+        content += `\n📅 Ajouté le : ${addedDate}\n`;
+        content += `🔁 Nombre de révisions : ${item.reviewCount}\n`;
+        
+        if (item.lastReviewed) {
+          const reviewDate = new Date(item.lastReviewed).toLocaleDateString('fr-FR');
+          content += `🕐 Dernière révision : ${reviewDate}\n`;
+        }
+
+        content += `\n`;
+      });
+    });
+
+    // Ajouter les stratégies d'apprentissage
+    if (data.strategies.length > 0) {
+      content += `\n═══════════════════════════════════════════════════\n`;
+      content += `   🧠 STRATÉGIES D'APPRENTISSAGE\n`;
+      content += `═══════════════════════════════════════════════════\n\n`;
+
+      data.strategies.forEach((strategy, index) => {
+        content += `[${index + 1}] ${strategy.name}\n`;
+        content += `${'─'.repeat(50)}\n`;
+        content += `📝 ${strategy.description}\n`;
+        
+        if (strategy.example) {
+          content += `\n💬 Exemple : ${strategy.example}\n`;
+        }
+
+        const discoveredDate = new Date(strategy.discoveredDate).toLocaleDateString('fr-FR');
+        content += `\n📅 Découverte le : ${discoveredDate}\n`;
+        content += `📊 Utilisée ${strategy.timesUsed} fois\n\n`;
+      });
+    }
 
     content += `\n═══════════════════════════════════════════════════\n`;
-    content += `   ${categoryLabels[category as keyof typeof categoryLabels]}\n`;
-    content += `═══════════════════════════════════════════════════\n\n`;
+    content += `   FIN DU DOCUMENT\n`;
+    content += `═══════════════════════════════════════════════════\n`;
 
-    items.forEach((item, index) => {
-      content += `[${index + 1}] ${item.title}\n`;
-      content += `${'─'.repeat(50)}\n`;
-      content += `📝 Description : ${item.description}\n`;
-      
-      if (item.example) {
-        content += `\n💬 Exemple :\n${item.example}\n`;
-      }
-      
-      if (item.errorContext) {
-        content += `\n🎯 Contexte : ${item.errorContext}\n`;
-      }
-
-      if (item.practicePrompt) {
-        content += `\n✏️ Exercice : ${item.practicePrompt}\n`;
-      }
-
-      const addedDate = new Date(item.addedDate).toLocaleDateString('fr-FR');
-      content += `\n📅 Ajouté le : ${addedDate}\n`;
-      content += `🔁 Nombre de révisions : ${item.reviewCount}\n`;
-      
-      if (item.lastReviewed) {
-        const reviewDate = new Date(item.lastReviewed).toLocaleDateString('fr-FR');
-        content += `🕐 Dernière révision : ${reviewDate}\n`;
-      }
-
-      content += `\n`;
-    });
-  });
-
-  // Ajouter les stratégies d'apprentissage
-  if (data.strategies.length > 0) {
-    content += `\n═══════════════════════════════════════════════════\n`;
-    content += `   🧠 STRATÉGIES D'APPRENTISSAGE\n`;
-    content += `═══════════════════════════════════════════════════\n\n`;
-
-    data.strategies.forEach((strategy, index) => {
-      content += `[${index + 1}] ${strategy.name}\n`;
-      content += `${'─'.repeat(50)}\n`;
-      content += `📝 ${strategy.description}\n`;
-      
-      if (strategy.example) {
-        content += `\n💬 Exemple : ${strategy.example}\n`;
-      }
-
-      const discoveredDate = new Date(strategy.discoveredDate).toLocaleDateString('fr-FR');
-      content += `\n📅 Découverte le : ${discoveredDate}\n`;
-      content += `📊 Utilisée ${strategy.timesUsed} fois\n\n`;
-    });
-  }
-
-  content += `\n═══════════════════════════════════════════════════\n`;
-  content += `   FIN DU DOCUMENT\n`;
-  content += `═══════════════════════════════════════════════════\n`;
-
-  // Créer et télécharger le fichier
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `boite-a-outils-${new Date().toISOString().split('T')[0]}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
+    // Créer et télécharger le fichier
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `boite-a-outils-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
   
@@ -178,12 +178,17 @@ const handleExport = () => {
           <div className="text-2xl font-bold text-blue-600">{data.strategies.length}</div>
           <div className="text-sm text-gray-600">Stratégies découvertes</div>
         </div>
+        
+        {/* ✅ MOTIVATION au lieu de Révisions effectuées */}
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-purple-600">
-            {data.items.reduce((sum, item) => sum + item.reviewCount, 0)}
+            {data.items.length > 0 
+              ? Math.round((data.items.reduce((sum, item) => sum + item.reviewCount, 0) / data.items.length) * 100) / 100
+              : 0}
           </div>
-          <div className="text-sm text-gray-600">Révisions effectuées</div>
+          <div className="text-sm text-gray-600">Moyenne révisions/item</div>
         </div>
+        
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <button
             onClick={handleExport}
@@ -262,16 +267,62 @@ const handleExport = () => {
         )}
       </div>
 
-      {/* Guide d'utilisation */}
+      {/* Guide d'utilisation - TEXTE MIS À JOUR */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Comment utiliser votre Boîte à Outils ?</h3>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>✓ Les corrections du mode oral sont ajoutées automatiquement</li>
           <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
-          <li>✓ Cliquez sur "J'ai révisé" pour suivre vos progrès</li>
+          <li>✓ Développez un élément pour voir l'exemple, l'explication et le contexte</li>
           <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
-          <li>✓ Exportez vos données en .txt pour les sauvegarder</li>
+          <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
         </ul>
+      </div>
+
+      {/* ✅ SECTION MOTIVATION (à développer plus tard) */}
+      <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-purple-900 mb-3">🌟 Motivation</h3>
+        <div className="space-y-3">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Progression cette semaine</span>
+              <span className="text-sm font-bold text-purple-600">
+                {data.items.filter(item => {
+                  const itemDate = new Date(item.addedDate);
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return itemDate >= weekAgo;
+                }).length} nouveaux éléments
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${Math.min(100, (data.items.filter(item => {
+                    const itemDate = new Date(item.addedDate);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return itemDate >= weekAgo;
+                  }).length / 10) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-purple-800 font-medium">
+              {data.items.length === 0 
+                ? "🎯 Commencez votre aventure d'apprentissage !"
+                : data.items.length < 10
+                ? "🚀 Continuez comme ça, vous progressez bien !"
+                : data.items.length < 30
+                ? "⭐ Excellente collection ! Vous êtes motivé(e) !"
+                : "🏆 Impressionnant ! Vous êtes un(e) apprenant(e) assidu(e) !"
+              }
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
