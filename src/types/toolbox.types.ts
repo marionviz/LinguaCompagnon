@@ -1,4 +1,4 @@
-typescript// src/types/toolbox.types.ts
+// src/types/toolbox.types.ts
 
 export type ToolBoxCategory = 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' | 'strategy';
 
@@ -10,21 +10,23 @@ export interface ToolBoxItem {
   example?: string;
   learningStrategy?: string; // La stratégie pour retenir ceci
   errorContext?: string; // Contexte de l'erreur commise
-  addedDate: Date;
+  addedDate: string; // ✅ CHANGÉ : string au lieu de Date (pour localStorage)
   reviewCount: number; // Nombre de fois consulté
-  lastReviewed?: Date;
+  lastReviewed?: string; // ✅ CHANGÉ : string au lieu de Date
   tags?: string[]; // Ex: ["auxiliaire", "mouvement"]
+  practicePrompt?: string; // ✅ AJOUTÉ : pour éviter l'erreur "does not exist"
 }
 
 export interface LearningStrategy {
   id: string;
+  name: string; // ✅ AJOUTÉ : propriété manquante
   title: string;
   description: string;
-  whenToUse: string;
-  example: string;
-  discoveredDate: Date;
+  whenToUse?: string; // ✅ AJOUTÉ : optionnel
+  example?: string; // ✅ AJOUTÉ : optionnel
+  discoveredDate: string; // ✅ CHANGÉ : string au lieu de Date
   timesUsed: number;
-  effectiveness: 'low' | 'medium' | 'high'; // Auto-évaluation
+  effectiveness?: 'low' | 'medium' | 'high'; // ✅ CHANGÉ : optionnel
 }
 
 export interface ToolBoxData {
@@ -36,8 +38,8 @@ export interface ToolBoxData {
 
 export interface SessionData {
   id: string;
-  startTime: Date;
-  endTime: Date;
+  startTime: string; // ✅ CHANGÉ : string au lieu de Date
+  endTime: string; // ✅ CHANGÉ : string au lieu de Date
   duration: number; // en minutes
   itemsAdded: number;
   strategiesDiscovered: number;

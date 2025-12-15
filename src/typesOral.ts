@@ -1,3 +1,4 @@
+// src/typesOral.ts
 // Types spécifiques pour le mode oral (LiveTutor)
 // Séparés des types principaux pour éviter les conflits
 
@@ -9,6 +10,7 @@ export interface CourseWeekOral {
   vocabulary: string[];
   grammar: string[];
   objective: string;
+  systemPrompt?: string; // ✅ AJOUTÉ
 }
 
 export enum ConnectionState {
@@ -28,6 +30,6 @@ export interface Correction {
   originalSentence: string;
   correctedSentence: string;
   explanation: string;
-  errorType?: 'pronunciation' | 'grammar' | 'vocabulary' | 'conjugation';  // ✅ NOUVEAU
-  mispronounced Word?: string;  // ✅ NOUVEAU : mot(s) mal prononcé(s)
+  errorType?: 'pronunciation' | 'grammar' | 'vocabulary' | 'conjugation'; 
+  mispronouncedWord?: string; 
 }
