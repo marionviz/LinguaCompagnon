@@ -1,41 +1,57 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">  
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LinguaCompagnon: AI French Tutor</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#16a34a">  
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LinguaCompagnon">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- SEO & Description -->
+    <meta name="description" content="LinguaCompagnon - Votre assistant personnel IA pour pratiquer le français. Mode écrit et oral avec corrections en temps réel.">
+
+    <title>LinguaCompagnon: votre assistant personnel IA</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      .text-brand-green { color: #006600; }
-      .bg-brand-green { background-color: #006600; }
-      .hover\:bg-brand-green-dark:hover { background-color: #004d00; }
+      .text-brand-green { color: #16a34a; }  
+      .bg-brand-green { background-color: #16a34a; }
+      .hover\:bg-brand-green:hover { background-color: #15803d; } 
+      .hover\:bg-green-700:hover { background-color: #15803d; }
       .focus\:ring-brand-green:focus {
         --tw-ring-opacity: 1;
-        --tw-ring-color: rgba(0, 102, 0, var(--tw-ring-opacity));
+        --tw-ring-color: rgba(22, 163, 74, var(--tw-ring-opacity));
       }
       .focus\:border-brand-green:focus {
         --tw-border-opacity: 1;
-        border-color: rgba(0, 102, 0, var(--tw-border-opacity));
+        border-color: rgba(22, 163, 74, var(--tw-border-opacity));
       }
+      .border-brand-green { border-color: #16a34a; }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
-  }
-}
-</script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+      }
+    }
+    </script>
 </head>
 <body class="bg-gray-100 text-gray-800">
-    <div id="root"></div>
+    <div id="root"></div> 
     <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>
