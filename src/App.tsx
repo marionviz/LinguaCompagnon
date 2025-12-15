@@ -554,24 +554,14 @@ const sendMessage = async (userMessage: string) => {
         </div>
       </main>
 
-      <footer className="sticky bottom-0 z-10 bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex-grow">
-            <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
-          </div>
-          <button
-            onClick={handleDownload}
-            disabled={messages.length === 0}
-            className="flex-shrink-0 w-12 h-12 bg-brand-green hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center"
-            title="Télécharger la conversation"
-            aria-label="Télécharger la conversation"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
-        </div>
-      </footer>
+     <footer className="sticky bottom-0 z-10 bg-white">
+  <ChatInput 
+    onSendMessage={sendMessage} 
+    onDownload={handleDownload}
+    isLoading={isLoading}
+    hasMessages={messages.length > 0}
+  />
+</footer>
     </div>
   );
 }

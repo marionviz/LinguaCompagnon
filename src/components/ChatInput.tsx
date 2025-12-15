@@ -1,70 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { SendIcon } from './Icons';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onDownload: () => void;
   isLoading: boolean;
+  hasMessages: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onDownload, isLoading, hasMessages }) => {
   const [inputValue, setInputValue] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    // @ts-ignore
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true; // ✅ MODIFIÉ : Enregistrement continu
-      recognition.lang = 'fr-FR';
-      recognition.interimResults = true; // ✅ MODIFIÉ : Afficher les résultats intermédiaires
-
-      recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setInputValue(transcript);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        // ✅ MODIFIÉ : Ne pas arrêter automatiquement si l'utilisateur est en train d'enregistrer
-        if (isListening) {
-          recognitionRef.current.start();
-        }
-      };
-      
-      recognitionRef.current = recognition;
-    }
-  }, [isListening]);
-
-  const toggleListening = () => {
-    if (isLoading || !recognitionRef.current) return;
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading) {
-      // ✅ Arrêter l'enregistrement si actif avant d'envoyer
-      if (isListening) {
-        recognitionRef.current.stop();
-        setIsListening(false);
-      }
       onSendMessage(inputValue);
       setInputValue('');
     }
@@ -97,6 +47,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
 
   return (
     <div className="flex flex-col bg-gray-100 border-t border-gray-200">
+      {/* Caractères spéciaux */}
       <div className="flex gap-2 px-3 pt-2 pb-0 overflow-x-auto">
         {specialChars.map((char) => (
           <button
@@ -104,63 +55,53 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
             type="button"
             onClick={() => insertCharacter(char)}
             disabled={isLoading}
-            className="px-3 py-1 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-green-600"
+            className="px-3 py-1 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-green-600 flex-shrink-0"
           >
             {char}
           </button>
         ))}
       </div>
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 p-2 pt-2">
-        <textarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Écrivez votre message ou dictez-le..."
-          className="flex-grow bg-white text-gray-900 placeholder-gray-500 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent resize-none"
-          rows={1}
-          disabled={isLoading}
-        />
-        
-        {/* ✅ NOUVEAU BOUTON MICRO avec animation */}
-        <button
-          type="button"
-          onClick={toggleListening}
-          disabled={isLoading}
-          aria-label={isListening ? 'Arrêter l\'enregistrement' : 'Commencer l\'enregistrement'}
-          className={`flex-shrink-0 p-3 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50 disabled:cursor-not-allowed relative ${
-              isListening 
-                ? 'bg-red-600 text-white shadow-lg' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          {isListening ? (
-            // ✅ Animation barres verticales pendant l'enregistrement
-            <div className="flex items-center justify-center gap-1 w-6 h-6">
-              <div className="w-1 bg-white rounded-full animate-pulse" style={{height: '60%', animationDelay: '0ms'}}></div>
-              <div className="w-1 bg-white rounded-full animate-pulse" style={{height: '100%', animationDelay: '150ms'}}></div>
-              <div className="w-1 bg-white rounded-full animate-pulse" style={{height: '80%', animationDelay: '300ms'}}></div>
-              <div className="w-1 bg-white rounded-full animate-pulse" style={{height: '60%', animationDelay: '450ms'}}></div>
-            </div>
-          ) : (
-            // ✅ Icône micro simple
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-            </svg>
-          )}
-        </button>
 
+      {/* Zone de saisie + boutons */}
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 p-2 pt-2">
+        {/* ✅ BOUTON ENVOI À GAUCHE */}
         <button
           type="submit"
           disabled={isLoading || !inputValue.trim()}
           aria-label="Envoyer le message"
-          className="bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green"
+          className="flex-shrink-0 bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green shadow-md"
         >
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
           ) : (
             <SendIcon className="w-6 h-6" />
           )}
+        </button>
+
+        {/* ✅ TEXTAREA AGRANDIE (3 lignes) */}
+        <textarea
+          ref={textareaRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Écrivez votre message..."
+          className="flex-grow bg-white text-gray-900 placeholder-gray-500 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent resize-none min-h-[80px]"
+          rows={3}
+          disabled={isLoading}
+        />
+
+        {/* ✅ BOUTON TÉLÉCHARGER À DROITE (bien visible) */}
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={!hasMessages}
+          className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-3 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title="Télécharger la conversation"
+          aria-label="Télécharger la conversation"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
         </button>
       </form>
     </div>
