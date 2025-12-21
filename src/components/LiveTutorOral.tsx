@@ -303,8 +303,6 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
       if (isValidCorrection(correction)) {
         setAllCorrections(prev => [...prev, correction]);
         addCorrectionToToolbox(correction);
-        setShowToolboxNotification(true);
-        setTimeout(() => setShowToolboxNotification(false), 3000);
       } else {
         console.log('❌ Correction rejetée car invalide');
       }
