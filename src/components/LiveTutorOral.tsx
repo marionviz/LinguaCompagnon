@@ -364,6 +364,62 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
     onClose();
   };
 
+  // ✅ FONCTION À AJOUTER DANS LiveTutorOral.tsx
+// Placez cette fonction après handleEndCall (vers ligne 360-380)
+
+const handleReportDoubtOral = () => {
+  // Créer le contenu de l'email
+  const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL - LinguaCompagnon');
+  
+  // Générer les corrections enregistrées
+  let correctionsText = '=== CORRECTIONS REÇUES PENDANT LA SESSION ===\n\n';
+  if (allCorrections.length === 0) {
+    correctionsText += '(Aucune correction enregistrée)\n\n';
+  } else {
+    allCorrections.forEach((correction, index) => {
+      correctionsText += `[${index + 1}] Type: ${correction.errorType || 'non spécifié'}\n`;
+      correctionsText += `   Original : ${correction.originalSentence}\n`;
+      correctionsText += `   Corrigé  : ${correction.correctedSentence}\n`;
+      correctionsText += `   Explication : ${correction.explanation}\n`;
+      if (correction.mispronouncedWord) {
+        correctionsText += `   Mot concerné : ${correction.mispronouncedWord}\n`;
+      }
+      correctionsText += '\n';
+    });
+  }
+  
+  // Calculer la durée écoulée
+  const elapsedTime = initialDuration * 60 - timeRemaining;
+  
+  // Corps de l'email
+  const body = encodeURIComponent(`Bonjour Marion,
+
+J'ai un doute concernant une ou plusieurs corrections reçues pendant ma session orale avec François.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ SESSION MODE ORAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONTEXTE :
+- Semaine : ${week.title}
+- Date : ${new Date().toLocaleString('fr-FR')}
+- Durée session : ${formatTime(elapsedTime)}
+- Nombre de corrections : ${allCorrections.length}
+
+${correctionsText}
+
+COMMENTAIRE LIBRE :
+(Ajoutez vos commentaires ici pour préciser votre doute)
+
+Merci de vérifier ces corrections.
+
+Cordialement,
+Un apprenant`);
+
+  // Ouvrir le client email avec mailto
+  window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+};
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -437,29 +493,56 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
         </div>
       )}
       
-      <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"><img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" /></div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Lingua<span className="text-brand-green">Compagnon</span></h1>
-              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
-              <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-            </div>
-            <button onClick={handleEndCall} className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Terminer
-            </button>
-          </div>
-        </div>
-        <p className="text-sm text-gray-600"><span className="font-semibold text-gray-900">Objectif :</span> {week.description}</p>
-      </header>
+      // ✅ HEADER MODIFIÉ POUR LiveTutorOral.tsx
+// Remplacez la section header (lignes 440-462) par ce code :
+
+<header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+  <div className="flex justify-between items-center mb-2">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+        <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+      </div>
+      <div>
+        <h1 className="text-xl font-bold text-gray-800">Lingua<span className="text-brand-green">Compagnon</span></h1>
+        <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
+      </div>
+    </div>
+    
+    {/* ✅ BOUTONS À DROITE (Timer + Un doute + Terminer) */}
+    <div className="flex items-center gap-2">
+      {/* Timer */}
+      <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
+        <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+      </div>
+      
+      {/* ✅ NOUVEAU : Bouton Un doute */}
+      <button 
+        onClick={handleReportDoubtOral}
+        className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 text-xs font-medium rounded-lg transition-all border border-orange-300"
+        title="Signaler un doute sur une correction à Marion"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        Un doute ?
+      </button>
+      
+      {/* Bouton Terminer */}
+      <button 
+        onClick={handleEndCall} 
+        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Terminer
+      </button>
+    </div>
+  </div>
+  <p className="text-sm text-gray-600">
+    <span className="font-semibold text-gray-900">Objectif :</span> {week.description}
+  </p>
+</header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
       <div className="flex-1 flex items-center justify-center">
