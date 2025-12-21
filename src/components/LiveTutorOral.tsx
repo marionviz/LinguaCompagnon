@@ -286,7 +286,30 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
                    console.log("📝 Correction reçue:", correctionData);
-                   setAllCorrections(prev => [...prev, correctionData]);
+                   if (message.serverContent?.modelTurn?.parts) {
+  message.serverContent.modelTurn.parts.forEach(part => {
+    if (part.functionCall?.name === "displayCorrection") {
+      const args = part.functionCall.args as any;
+      const correction: Correction = {
+        originalSentence: args.originalSentence || "",
+        correctedSentence: args.correctedSentence || "",
+        explanation: args.explanation || "",
+        errorType: args.errorType,
+        mispronouncedWord: args.mispronouncedWord
+      };
+      
+      // ✅ VALIDATION AVANT AJOUT
+      if (isValidCorrection(correction)) {
+        setAllCorrections(prev => [...prev, correction]);
+        setShowToolboxNotification(true);
+        setTimeout(() => setShowToolboxNotification(false), 3000);
+      } else {
+        console.log('❌ Correction rejetée car invalide');
+      }
+    }
+  });
+}
+setAllCorrections(prev => [...prev, correctionData]);
                    addCorrectionToToolbox(correctionData);
 
                    if (sessionPromiseRef.current) {
@@ -453,6 +476,38 @@ Un apprenant`);
   } catch (error) {
     console.error('❌ Erreur dans handleReportDoubtOral:', error);
   }
+};
+
+const isValidCorrection = (correction: Correction): boolean => {
+  // 1. Vérifier que les phrases ne sont pas identiques
+  const original = correction.originalSentence.trim().toLowerCase();
+  const corrected = correction.correctedSentence.trim().toLowerCase();
+  
+  if (original === corrected) {
+    console.warn('⚠️ Correction rejetée : phrases identiques', correction);
+    return false;
+  }
+  
+  // 2. Vérifier que la différence est significative (au moins 2 caractères)
+  const difference = Math.abs(original.length - corrected.length);
+  if (difference === 0 && original === corrected) {
+    console.warn('⚠️ Correction rejetée : aucune différence', correction);
+    return false;
+  }
+  
+  // 3. Pour les erreurs de prononciation, vérifier qu'il y a vraiment une différence
+  if (correction.errorType === 'pronunciation') {
+    // Enlever les underscores pour comparer
+    const originalClean = original.replace(/_/g, ' ');
+    const correctedClean = corrected.replace(/_/g, ' ');
+    
+    if (originalClean === correctedClean) {
+      console.warn('⚠️ Correction prononciation rejetée : identique sans underscores', correction);
+      return false;
+    }
+  }
+  
+  return true;
 };
 
   const formatTime = (seconds: number) => {
