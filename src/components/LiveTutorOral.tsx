@@ -175,7 +175,8 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
     example,
     errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
   });
-
+console.log('✅ Item ajouté, dispatch event toolboxUpdated');
+  window.dispatchEvent(new Event('toolboxUpdated'));
   setShowToolboxNotification(true);
   setTimeout(() => setShowToolboxNotification(false), 3000);
 }, [addItem, weekNumber]);

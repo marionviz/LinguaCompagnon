@@ -11,6 +11,17 @@ export const ToolBox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const { data, addItem, removeItem, updateItem, reviewItem, getByCategory, exportData } = useToolBox();
 
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+
+  React.useEffect(() => {
+    const handleToolboxUpdate = () => {
+      console.log('🔄 ToolBox reçoit event, force re-render');
+      setUpdateTrigger(prev => prev + 1);
+    };
+    window.addEventListener('toolboxUpdated', handleToolboxUpdate);
+    return () => window.removeEventListener('toolboxUpdated', handleToolboxUpdate);
+  }, []);
+  
   const handleExport = () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-FR', { 
