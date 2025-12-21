@@ -286,7 +286,8 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
                    console.log("📝 Correction reçue:", correctionData);
-                   if (message.serverContent?.modelTurn?.parts) {
+                
+               if (message.serverContent?.modelTurn?.parts) {
   message.serverContent.modelTurn.parts.forEach(part => {
     if (part.functionCall?.name === "displayCorrection") {
       const args = part.functionCall.args as any;
@@ -298,9 +299,10 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
         mispronouncedWord: args.mispronouncedWord
       };
       
-      // ✅ VALIDATION AVANT AJOUT
+      // ✅ Validation + Ajout (une seule fois)
       if (isValidCorrection(correction)) {
         setAllCorrections(prev => [...prev, correction]);
+        addCorrectionToToolbox(correction);
         setShowToolboxNotification(true);
         setTimeout(() => setShowToolboxNotification(false), 3000);
       } else {
