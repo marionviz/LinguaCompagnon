@@ -309,8 +309,6 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
     }
   });
 }
-setAllCorrections(prev => [...prev, correctionData]);
-                   addCorrectionToToolbox(correctionData);
 
                    if (sessionPromiseRef.current) {
                      sessionPromiseRef.current.then(session => {
