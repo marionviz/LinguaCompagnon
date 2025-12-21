@@ -1,6 +1,6 @@
 // src/hooks/useToolBox.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getToolBoxData, saveToolBoxData, addToolBoxItem, removeToolBoxItem, /* ... */ } from '../utils/toolboxStorage';
 
 export const useToolBox = () => {
