@@ -289,21 +289,65 @@ const sendMessage = async (userMessage: string) => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleDownload = () => {
-    const conversationText = messages.map(msg => 
-      `${msg.role === 'user' ? 'Vous' : 'LinguaCompagnon'}: ${msg.text}`
-    ).join('\n\n');
+const handleDownload = () => {
+  const conversationText = messages.map(msg => 
+    `${msg.role === 'user' ? 'Vous' : 'LinguaCompagnon'}: ${msg.text}`
+  ).join('\n\n');
 
-    const blob = new Blob([conversationText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `conversation-semaine-${currentWeek}-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  const blob = new Blob([conversationText], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `conversation-semaine-${currentWeek}-${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const handleReportDoubt = (messageId: string) => {
+  const reportedMessage = messages.find(m => m.id === messageId);
+  if (!reportedMessage) return;
+
+  const subject = encodeURIComponent('🚨 Doute sur une correction - LinguaCompagnon');
+  
+  let conversationText = '=== CONVERSATION COMPLÈTE ===\n\n';
+  messages.forEach((msg, index) => {
+    const speaker = msg.role === 'model' ? 'Marion' : 'Apprenant';
+    conversationText += `[${index + 1}] ${speaker}:\n${msg.text}\n\n`;
+  });
+  
+  const messageIndex = messages.findIndex(m => m.id === messageId);
+  const highlightedMessage = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ MESSAGE SIGNALÉ (n°${messageIndex + 1}) :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${reportedMessage.text}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `;
+  
+  const body = encodeURIComponent(`Bonjour Marion,
+
+J'ai un doute concernant une correction dans LinguaCompagnon.
+
+${highlightedMessage}
+
+CONTEXTE :
+- Semaine : ${currentWeek}
+- Date : ${new Date().toLocaleString('fr-FR')}
+- Nombre de messages : ${messages.length}
+
+${conversationText}
+
+Merci de vérifier cette correction.
+
+Cordialement,
+Un apprenant`);
+
+  window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+};
 
   // ====== ÉCRAN SÉLECTION MODE INITIAL ======
   if (showModeSelector) {
@@ -536,6 +580,7 @@ const sendMessage = async (userMessage: string) => {
               message={msg}
               onSpeak={handleSpeak}
               onPractice={() => sendMessage("Je veux pratiquer")}
+              onReportDoubt={handleReportDoubt}
               isSpeaking={speakingMessageId === msg.id}
             />
           ))}
