@@ -364,9 +364,6 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
     onClose();
   };
 
-  // ✅ FONCTION À AJOUTER DANS LiveTutorOral.tsx
-// Placez cette fonction après handleEndCall (vers ligne 360-380)
-
 const handleReportDoubtOral = () => {
   // Créer le contenu de l'email
   const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL - LinguaCompagnon');
