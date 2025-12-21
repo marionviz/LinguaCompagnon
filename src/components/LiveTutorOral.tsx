@@ -13,30 +13,55 @@ interface LiveTutorOralProps {
 
 const correctionTool: FunctionDeclaration = {
   name: "displayCorrection",
-  description: "Affiche une correction écrite sur l'écran. À utiliser pour TOUTES les erreurs importantes : grammaire, vocabulaire, conjugaison ET prononciation. IMPORTANT : Si l'apprenant prononce mal un mot mais l'écrit correctement (phrases identiques à l'écrit), c'est une erreur de PRONONCIATION.",
+  description: `Affiche toutes les corrections à la fois sur l'écran.
+
+⚠️ RÈGLES STRICTES - NE CORRIGER QUE SI VRAIE ERREUR :
+1. ❌ NE JAMAIS corriger si originalSentence === correctedSentence
+2. ❌ NE JAMAIS corriger si les phrases sont quasi-identiques
+3. ✅ Corriger UNIQUEMENT les VRAIES erreurs importantes
+
+TYPES D'ERREURS À CORRIGER :
+✅ GRAMMAIRE : articles, accords, structure de phrase incorrecte
+✅ CONJUGAISON : temps verbal erroné, auxiliaire incorrect
+✅ VOCABULAIRE : mot inexistant ou très mal prononcé/écrit
+✅ PRONONCIATION : UNIQUEMENT liaisons interdites (ex: "les_haricots" → "les haricots")
+
+❌ NE PAS CORRIGER :
+- Liaisons facultatives ou obligatoires bien prononcées
+- Phrases déjà correctes
+- Petits accents étrangers acceptables
+- Approximations de prononciation si le sens est clair
+
+EXEMPLES CONCRETS :
+✅ Corriger : "Je suis allé à la Paris" → "Je suis allé à Paris" (grammaire)
+✅ Corriger : "Hier je mange" → "Hier j'ai mangé" (conjugaison)
+✅ Corriger : "les_haricots" [liaison interdite] → "les haricots" (prononciation)
+❌ NE PAS corriger : "Ils sont lourds" → "Ils sont lourds" (IDENTIQUE !)
+❌ NE PAS corriger : "avec mes amis" → "avec mes_amis" (liaison facultative OK)`,
+  
   parameters: {
     type: Type.OBJECT,
     properties: {
       originalSentence: { 
         type: Type.STRING, 
-        description: "La phrase exacte transcrite de ce que l'utilisateur a dit (peut contenir des erreurs d'orthographe si mal prononcé)." 
+        description: "La phrase EXACTE prononcée par l'apprenant AVEC l'erreur. Si aucune vraie erreur, NE PAS appeler cet outil." 
       },
       correctedSentence: { 
         type: Type.STRING, 
-        description: "La version correcte de la phrase (orthographe correcte)." 
+        description: "La version CORRIGÉE. DOIT être DIFFÉRENTE de originalSentence. Si identique, NE PAS appeler cet outil." 
       },
       explanation: { 
         type: Type.STRING, 
-        description: "Une explication très brève de l'erreur. TOUJOURS commencer par le type : 'Prononciation :', 'Grammaire :', 'Vocabulaire :', ou 'Conjugaison :' suivi de l'explication (max 15 mots)." 
+        description: "Explication TRÈS BRÈVE (max 10 mots). Format obligatoire : 'Type : explication courte'. Exemples : 'Grammaire : pas d'article devant les villes', 'Conjugaison : hier nécessite le passé composé'" 
       },
       errorType: {
         type: Type.STRING,
-        description: "Le type d'erreur détecté",
+        description: "Le type d'erreur détecté. Choisir parmi : pronunciation, grammar, vocabulary, conjugation",
         enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
       },
       mispronouncedWord: {
         type: Type.STRING,
-        description: "Pour les erreurs de prononciation : le ou les mots mal prononcés (ex: 'suis', 'été', 'beaucoup'). Laisser vide pour les autres types d'erreurs."
+        description: "UNIQUEMENT si errorType='pronunciation' : indiquer le ou les mots mal prononcés (ex: 'beaucoup', 'été'). Laisser VIDE pour grammar, vocabulary, conjugation."
       }
     },
     required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
@@ -365,31 +390,38 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
   };
 
 const handleReportDoubtOral = () => {
-  // Créer le contenu de l'email
-  const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL - LinguaCompagnon');
+  console.log('🔍 handleReportDoubtOral appelé');
+  console.log('📊 allCorrections:', allCorrections);
+  console.log('📅 week:', week);
+  console.log('⏱️ timeRemaining:', timeRemaining);
+  console.log('🎯 initialDuration:', initialDuration);
   
-  // Générer les corrections enregistrées
-  let correctionsText = '=== CORRECTIONS REÇUES PENDANT LA SESSION ===\n\n';
-  if (allCorrections.length === 0) {
-    correctionsText += '(Aucune correction enregistrée)\n\n';
-  } else {
-    allCorrections.forEach((correction, index) => {
-      correctionsText += `[${index + 1}] Type: ${correction.errorType || 'non spécifié'}\n`;
-      correctionsText += `   Original : ${correction.originalSentence}\n`;
-      correctionsText += `   Corrigé  : ${correction.correctedSentence}\n`;
-      correctionsText += `   Explication : ${correction.explanation}\n`;
-      if (correction.mispronouncedWord) {
-        correctionsText += `   Mot concerné : ${correction.mispronouncedWord}\n`;
-      }
-      correctionsText += '\n';
-    });
-  }
-  
-  // Calculer la durée écoulée
-  const elapsedTime = initialDuration * 60 - timeRemaining;
-  
-  // Corps de l'email
-  const body = encodeURIComponent(`Bonjour Marion,
+  try {
+    // Créer le contenu de l'email
+    const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL - LinguaCompagnon');
+    
+    // Générer les corrections enregistrées
+    let correctionsText = '=== CORRECTIONS REÇUES PENDANT LA SESSION ===\n\n';
+    if (allCorrections.length === 0) {
+      correctionsText += '(Aucune correction enregistrée)\n\n';
+    } else {
+      allCorrections.forEach((correction, index) => {
+        correctionsText += `[${index + 1}] Type: ${correction.errorType || 'non spécifié'}\n`;
+        correctionsText += `   Original : ${correction.originalSentence}\n`;
+        correctionsText += `   Corrigé  : ${correction.correctedSentence}\n`;
+        correctionsText += `   Explication : ${correction.explanation}\n`;
+        if (correction.mispronouncedWord) {
+          correctionsText += `   Mot concerné : ${correction.mispronouncedWord}\n`;
+        }
+        correctionsText += '\n';
+      });
+    }
+    
+    // Calculer la durée écoulée
+    const elapsedTime = initialDuration * 60 - timeRemaining;
+    
+    // Corps de l'email
+    const body = encodeURIComponent(`Bonjour Marion,
 
 J'ai un doute concernant une ou plusieurs corrections reçues pendant ma session orale avec François.
 
@@ -413,8 +445,14 @@ Merci de vérifier ces corrections.
 Cordialement,
 Un apprenant`);
 
-  // Ouvrir le client email avec mailto
-  window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+    console.log('📧 Email généré, ouverture...');
+    
+    // Ouvrir le client email avec mailto
+    window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+    
+  } catch (error) {
+    console.error('❌ Erreur dans handleReportDoubtOral:', error);
+  }
 };
 
   const formatTime = (seconds: number) => {
