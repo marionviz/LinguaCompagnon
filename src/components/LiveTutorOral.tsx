@@ -302,7 +302,13 @@ const addCorrectionToToolbox = useCallback((correction: Correction & { errorType
       // ✅ Validation + Ajout (une seule fois)
       if (isValidCorrection(correction)) {
         setAllCorrections(prev => [...prev, correction]);
-        addCorrectionToToolbox(correction);
+        console.log('🔧 AVANT addCorrectionToToolbox, correction =', correction);
+try {
+  addCorrectionToToolbox(correction);
+  console.log('✅ addCorrectionToToolbox RÉUSSI');
+} catch (error) {
+  console.error('❌ ERREUR dans addCorrectionToToolbox:', error);
+}
       } else {
         console.log('❌ Correction rejetée car invalide');
       }
