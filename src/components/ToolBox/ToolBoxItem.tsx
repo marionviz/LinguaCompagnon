@@ -62,10 +62,10 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
 
           {isExpanded && (
             <div className="mt-3 space-y-3">
-              {/* ✅ 1. EXEMPLE EN PREMIER */}
+              {/* ✅ 1. CORRECTION EN PREMIER */}
               {item.example && (
                 <div className="bg-gray-50 border-l-4 border-gray-400 p-3 rounded-r text-sm">
-                  <strong className="text-gray-700">Exemple :</strong>
+                  <strong className="text-gray-700">Correction :</strong>
                   <p className="text-gray-600 whitespace-pre-line mt-1">{item.example}</p>
                 </div>
               )}
@@ -85,10 +85,10 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
                 </div>
               )}
 
-              {/* ✅ 3. CONTEXTE EN TROISIÈME */}
+              {/* ✅ 3. CONSEIL EN TROISIÈME */}
               {item.errorContext && (
                 <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r text-sm">
-                  <strong className="text-amber-700">Contexte :</strong>
+                  <strong className="text-amber-700">Conseil :</strong>
                   <p className="text-amber-700 mt-1">{item.errorContext}</p>
                 </div>
               )}
