@@ -1,41 +1,43 @@
 // src/hooks/useToolBox.ts
 
-import { useState, useEffect, useCallback } from 'react';
-import { ToolBoxData, ToolBoxItem, LearningStrategy, ToolBoxCategory } from '../types/toolbox.types';
-import {
-  getToolBoxData,
-  addToolBoxItem,
-  removeToolBoxItem,
-  updateToolBoxItem,
-  reviewToolBoxItem,
-  getItemsByCategory,
-  getRecentItems,
-  addLearningStrategy,
-  incrementStrategyUsage,
-  exportToolBoxData,
-} from '../utils/toolboxStorage';
+import { useState, useEffect } from 'react';
+import { getToolBoxData, saveToolBoxData, addToolBoxItem, removeToolBoxItem, /* ... */ } from '../utils/toolboxStorage';
 
 export const useToolBox = () => {
-  const [data, setData] = useState<ToolBoxData>(getToolBoxData());
+  // ✅ État local qui force le re-render quand localStorage change
+  const [data, setData] = useState(getToolBoxData());
 
-  const refresh = useCallback(() => {
-    setData(getToolBoxData());
+  // ✅ Écouter les changements de localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      console.log('🔄 localStorage changé, rechargement data');
+      setData(getToolBoxData());
+    };
+
+    // Écouter l'event custom
+    window.addEventListener('toolboxUpdated', handleStorageChange);
+    
+    // Écouter aussi les changements directs de storage (si plusieurs onglets)
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('toolboxUpdated', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const addItem = useCallback((item: Omit<ToolBoxItem, 'id' | 'addedDate' | 'reviewCount'>) => {
+  const addItem = (item: Omit<ToolBoxItem, 'id' | 'addedDate' | 'reviewCount'>) => {
     const newItem = addToolBoxItem(item);
-    refresh();
+    setData(getToolBoxData()); // ✅ Mettre à jour l'état local
+    window.dispatchEvent(new Event('toolboxUpdated')); // ✅ Notifier les autres composants
     return newItem;
-  }, [refresh]);
+  };
 
-  const removeItem = useCallback((itemId: string) => {
-    removeToolBoxItem(itemId);
-    refresh();
-  }, [refresh]);
+  const removeItem = (id: string) => {
+    removeToolBoxItem(id);
+    setData(getToolBoxData()); // ✅ Mettre à jour l'état local
+    window.dispatchEvent(new Event('toolboxUpdated'));
+  };
 
   const updateItem = useCallback((itemId: string, updates: Partial<ToolBoxItem>) => {
     updateToolBoxItem(itemId, updates);
