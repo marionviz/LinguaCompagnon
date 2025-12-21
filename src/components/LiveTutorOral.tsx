@@ -415,7 +415,7 @@ const handleReportDoubtOral = () => {
   console.log('📊 allCorrections:', allCorrections);
   console.log('📅 week:', week);
   console.log('⏱️ timeRemaining:', timeRemaining);
-  console.log('🎯 initialDuration:', initialDuration);
+  console.log('🎯 selectedDuration:', selectedDuration);
   
   try {
     // Créer le contenu de l'email
@@ -438,8 +438,8 @@ const handleReportDoubtOral = () => {
       });
     }
     
-    // Calculer la durée écoulée
-    const elapsedTime = initialDuration * 60 - timeRemaining;
+    // ✅ Calculer la durée écoulée
+    const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
     
     // Corps de l'email
     const body = encodeURIComponent(`Bonjour Marion,
