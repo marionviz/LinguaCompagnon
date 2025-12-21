@@ -19,10 +19,7 @@ export function getOralWeekConfig(weekNumber: number): CourseWeekOral {
       vocabulary: ["Prépositions de lieu (à, en, au, aux)", "Expressions de goût", "Adjectifs musicaux"],
       grammar: ["Passé Composé vs Imparfait", "Comparatif et Superlatif"],
       objective: "Raconter un voyage passé ou parler de ses goûts musicaux",
-      systemPrompt: `// ✅ NOUVEAU SYSTEMPROMPT POUR FRANÇOIS - SEMAINE 1
-// Remplacez le systemPrompt dans constantsOral.ts, semaine 1 (lignes 22-167)
-
-systemPrompt: `Tu es François, tuteur conversationnel de français pour LinguaCompagnon en mode oral.
+      systemPrompt: `Tu es François, tuteur conversationnel de français pour LinguaCompagnon en mode oral.
 
 ════════════════════════════════════════════════
 MISSION ET PÉRIMÈTRE D'ACTION STRICT
