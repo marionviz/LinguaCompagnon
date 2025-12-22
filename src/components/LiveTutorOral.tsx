@@ -287,50 +287,16 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
                    console.log("📝 Correction reçue:", correctionData);
-                
-               if (message.serverContent?.modelTurn?.parts) {
-  message.serverContent.modelTurn.parts.forEach(part => {
-    if (part.functionCall?.name === "displayCorrection") {
-      const args = part.functionCall.args as any;
-      const correction: Correction = {
-        originalSentence: args.originalSentence || "",
-        correctedSentence: args.correctedSentence || "",
-        explanation: args.explanation || "",
-        errorType: args.errorType,
-        mispronouncedWord: args.mispronouncedWord
-      };
-      
-    // ✅ DEBUG : Logs avant validation
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 CORRECTION À VALIDER:');
-      console.log('  originalSentence:', correction.originalSentence);
-      console.log('  correctedSentence:', correction.correctedSentence);
-      console.log('  explanation:', correction.explanation);
-      console.log('  errorType:', correction.errorType);
-      
-      const isValid = isValidCorrection(correction);
-      console.log('🎯 Résultat isValidCorrection:', isValid);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
-      // ✅ Validation + Ajout (une seule fois)
-      if (isValid) {
-        console.log('✅ Correction VALIDÉE, ajout à la liste');
-        setAllCorrections(prev => [...prev, correction]);
-        console.log('🔧 AVANT addCorrectionToToolbox, correction =', correction);
-        
-        try {
-          addCorrectionToToolbox(correction);
-          console.log('✅ addCorrectionToToolbox RÉUSSI');
-        } catch (error) {
-          console.error('❌ ERREUR dans addCorrectionToToolbox:', error);
-        }
-      } else {
-        console.log('❌ Correction REJETÉE par isValidCorrection');
-      }
-    }
-  });
-}
+                   
+                   // ✅ Ajouter à la liste des corrections affichées
+                   setAllCorrections(prev => [...prev, correctionData]);
+                   
+                   // ✅ Ajouter à la boîte à outils
+                   console.log('🔧 Ajout à la toolbox...');
+                   addCorrectionToToolbox(correctionData);
+                   console.log('✅ Ajouté à la toolbox');
 
+                   // Réponse au tool
                    if (sessionPromiseRef.current) {
                      sessionPromiseRef.current.then(session => {
                        session.sendToolResponse({
