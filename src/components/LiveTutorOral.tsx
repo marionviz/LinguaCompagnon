@@ -300,16 +300,17 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
         mispronouncedWord: args.mispronouncedWord
       };
       
-      // ✅ Validation + Ajout (une seule fois)
-      if  (isValidCorrection(correction)) {
+    // ✅ Validation + Ajout (une seule fois)
+      if (isValidCorrection(correction)) {
         setAllCorrections(prev => [...prev, correction]);
         console.log('🔧 AVANT addCorrectionToToolbox, correction =', correction);
-try {
-  addCorrectionToToolbox(correction);
-  console.log('✅ addCorrectionToToolbox RÉUSSI');
-} catch (error) {
-  console.error('❌ ERREUR dans addCorrectionToToolbox:', error);
-}
+        
+        try {
+          addCorrectionToToolbox(correction);
+          console.log('✅ addCorrectionToToolbox RÉUSSI');
+        } catch (error) {
+          console.error('❌ ERREUR dans addCorrectionToToolbox:', error);
+        }
       } else {
         console.log('❌ Correction rejetée car invalide');
       }
