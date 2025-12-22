@@ -300,8 +300,21 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
         mispronouncedWord: args.mispronouncedWord
       };
       
-    // ✅ Validation + Ajout (une seule fois)
-      if (true) {
+    // ✅ DEBUG : Logs avant validation
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 CORRECTION À VALIDER:');
+      console.log('  originalSentence:', correction.originalSentence);
+      console.log('  correctedSentence:', correction.correctedSentence);
+      console.log('  explanation:', correction.explanation);
+      console.log('  errorType:', correction.errorType);
+      
+      const isValid = isValidCorrection(correction);
+      console.log('🎯 Résultat isValidCorrection:', isValid);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      // ✅ Validation + Ajout (une seule fois)
+      if (isValid) {
+        console.log('✅ Correction VALIDÉE, ajout à la liste');
         setAllCorrections(prev => [...prev, correction]);
         console.log('🔧 AVANT addCorrectionToToolbox, correction =', correction);
         
@@ -312,7 +325,7 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
           console.error('❌ ERREUR dans addCorrectionToToolbox:', error);
         }
       } else {
-        console.log('❌ Correction rejetée car invalide');
+        console.log('❌ Correction REJETÉE par isValidCorrection');
       }
     }
   });
