@@ -301,7 +301,7 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
       };
       
     // ✅ Validation + Ajout (une seule fois)
-      if (isValidCorrection(correction)) {
+      if (true) {
         setAllCorrections(prev => [...prev, correction]);
         console.log('🔧 AVANT addCorrectionToToolbox, correction =', correction);
         
