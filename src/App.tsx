@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
-import LiveTutorOral from './components/LiveTutorOral';
+import LiveSession from './components/LiveSession';
 import { ToolBox } from './components/ToolBox/ToolBox';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getWeekThemes } from './services/geminiService';
@@ -523,17 +523,21 @@ Un apprenant`);
   }
 
   // ====== MODE ORAL ======
-  if (conversationMode === 'oral') {
-    return (
-      <LiveTutorOral 
-        weekNumber={currentWeek}
-        onClose={() => {
+  // ✅ NOUVEAU (marche)
+// ====== MODE ORAL ======
+if (conversationMode === 'oral') {
+  const systemInstruction = getSystemPrompt(currentWeek);
+  
+  return (
+    <LiveSession 
+      systemInstruction={systemInstruction}
+      onClose={() => {
         setConversationMode('toolbox');
         setShowModeSelector(false);
-        }}
-      />
-    );
-  }
+      }}
+    />
+  );
+}
 
   // ====== MODE ÉCRIT ======
   return (
