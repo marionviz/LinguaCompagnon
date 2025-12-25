@@ -3,6 +3,7 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveSession from './components/LiveSession';
+import LiveTutorOral from './components/LiveTutorOral';
 import { ToolBox } from './components/ToolBox/ToolBox';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getWeekThemes } from './services/geminiService';
