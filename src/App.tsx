@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
-import LiveSession from './components/LiveSession';
 import LiveTutorOral from './components/LiveTutorOral';
 import { ToolBox } from './components/ToolBox/ToolBox';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -527,11 +526,9 @@ Un apprenant`);
   // ✅ NOUVEAU (marche)
 // ====== MODE ORAL ======
 if (conversationMode === 'oral') {
-  const systemInstruction = getSystemPrompt(currentWeek);
-  
   return (
-    <LiveSession 
-      systemInstruction={systemInstruction}
+    <LiveTutorOral 
+      weekNumber={currentWeek}
       onClose={() => {
         setConversationMode('toolbox');
         setShowModeSelector(false);
