@@ -277,19 +277,7 @@ export const ToolBox: React.FC = () => {
           />
         )}
       </div>
-
-      {/* Guide d'utilisation - TEXTE MIS À JOUR */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Comment utiliser votre Boîte à Outils ?</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>✓ Les corrections du mode oral sont ajoutées automatiquement</li>
-          <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
-          <li>✓ Développez un élément pour voir l'exemple, l'explication et le contexte</li>
-          <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
-          <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
-        </ul>
-      </div>
-
+      
       {/* ✅ SECTION MOTIVATION (à développer plus tard) */}
       <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
         <h3 className="text-lg font-bold text-purple-900 mb-3">🌟 Motivation</h3>
@@ -334,6 +322,18 @@ export const ToolBox: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Guide d'utilisation - TEXTE MIS À JOUR */}
+      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Comment utiliser votre Boîte à Outils ?</h3>
+        <ul className="text-sm text-blue-800 space-y-1">
+          <li>✓ Les corrections du mode oral sont ajoutées automatiquement</li>
+          <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
+          <li>✓ Développez un élément pour voir la correction, l'explication et le contexte</li>
+          <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
+          <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
+        </ul>
       </div>
     </div>
   );
