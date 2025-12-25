@@ -13,15 +13,58 @@ interface LiveTutorOralProps {
 
 const correctionTool: FunctionDeclaration = {
   name: "displayCorrection",
-  description: "Affiche une correction écrite sur l'écran. À utiliser quand l'apprenant fait une erreur de grammaire ou de vocabulaire importante.",
+  description: `Affiche toutes les corrections à la fois sur l'écran.
+
+⚠️ RÈGLES STRICTES - NE CORRIGER QUE SI VRAIE ERREUR :
+1. ❌ NE JAMAIS corriger si originalSentence === correctedSentence
+2. ❌ NE JAMAIS corriger si les phrases sont quasi-identiques
+3. ✅ Corriger UNIQUEMENT les VRAIES erreurs importantes
+
+TYPES D'ERREURS À CORRIGER :
+✅ GRAMMAIRE : articles, accords, structure de phrase incorrecte
+✅ CONJUGAISON : temps verbal erroné, auxiliaire incorrect
+✅ VOCABULAIRE : mot inexistant ou très mal prononcé/écrit
+✅ PRONONCIATION : UNIQUEMENT liaisons interdites (ex: "les_haricots" → "les haricots")
+
+❌ NE PAS CORRIGER :
+- Liaisons facultatives ou obligatoires bien prononcées
+- Phrases déjà correctes
+- Petits accents étrangers acceptables
+- Approximations de prononciation si le sens est clair
+
+EXEMPLES CONCRETS :
+✅ Corriger : "Je suis allé à la Paris" → "Je suis allé à Paris" (grammaire)
+✅ Corriger : "Hier je mange" → "Hier j'ai mangé" (conjugaison)
+✅ Corriger : "les_haricots" [liaison interdite] → "les haricots" (prononciation)
+❌ NE PAS corriger : "Ils sont lourds" → "Ils sont lourds" (IDENTIQUE !)
+❌ NE PAS corriger : "avec mes amis" → "avec mes_amis" (liaison facultative OK)`,
+  
   parameters: {
     type: Type.OBJECT,
     properties: {
-      originalSentence: { type: Type.STRING, description: "La phrase exacte dite par l'utilisateur avec l'erreur." },
-      correctedSentence: { type: Type.STRING, description: "La version corrigée de la phrase." },
-      explanation: { type: Type.STRING, description: "Une explication très brève (max 10 mots) de l'erreur." },
+      originalSentence: { 
+        type: Type.STRING, 
+        description: "La phrase EXACTE prononcée par l'apprenant AVEC l'erreur. Si aucune vraie erreur, NE PAS appeler cet outil." 
+      },
+      correctedSentence: { 
+        type: Type.STRING, 
+        description: "La version CORRIGÉE. DOIT être DIFFÉRENTE de originalSentence. Si identique, NE PAS appeler cet outil." 
+      },
+      explanation: { 
+        type: Type.STRING, 
+        description: "Explication TRÈS BRÈVE (max 10 mots). Format obligatoire : 'Type : explication courte'. Exemples : 'Grammaire : pas d'article devant les villes', 'Conjugaison : hier nécessite le passé composé'" 
+      },
+      errorType: {
+        type: Type.STRING,
+        description: "Le type d'erreur détecté. Choisir parmi : pronunciation, grammar, vocabulary, conjugation",
+        enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
+      },
+      mispronouncedWord: {
+        type: Type.STRING,
+        description: "UNIQUEMENT si errorType='pronunciation' : indiquer le ou les mots mal prononcés (ex: 'beaucoup', 'été'). Laisser VIDE pour grammar, vocabulary, conjugation."
+      }
     },
-    required: ["originalSentence", "correctedSentence", "explanation"],
+    required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
   },
 };
 
