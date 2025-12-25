@@ -149,6 +149,28 @@ export const ToolBox: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // ✅ NOUVELLE FONCTION : Effacer tout
+  const handleClearAll = () => {
+    if (window.confirm(
+      '⚠️ ATTENTION !\n\n' +
+      'Vous êtes sur le point d\'effacer TOUTES vos corrections :\n\n' +
+      `📐 Grammaire : ${data.categoryCounts.grammar} corrections\n` +
+      `📚 Vocabulaire : ${data.categoryCounts.vocabulary} corrections\n` +
+      `🔄 Conjugaison : ${data.categoryCounts.conjugation} corrections\n` +
+      `🗣️ Prononciation : ${data.categoryCounts.pronunciation} corrections\n` +
+      `💡 Stratégies : ${data.strategies.length} stratégies\n\n` +
+      `TOTAL : ${data.totalItemsAdded} éléments\n\n` +
+      '⚠️ Cette action est IRRÉVERSIBLE !\n\n' +
+      'Voulez-vous vraiment continuer ?'
+    )) {
+      // Effacer tout le localStorage
+      localStorage.removeItem('linguacompagnon_toolbox');
+      
+      // Recharger la page pour réinitialiser
+      window.location.reload();
+    }
+  };
+
   const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
   
   const categoryLabels: Record<CategoryType | 'all', string> = {
@@ -179,8 +201,8 @@ export const ToolBox: React.FC = () => {
         </p>
       </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* Statistiques rapides - ✅ MODIFIÉ : 5 colonnes au lieu de 4 */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-brand-green">{data.totalItemsAdded}</div>
           <div className="text-sm text-gray-600">Éléments ajoutés</div>
@@ -190,7 +212,7 @@ export const ToolBox: React.FC = () => {
           <div className="text-sm text-gray-600">Stratégies découvertes</div>
         </div>
         
-        {/* ✅ MOTIVATION au lieu de Révisions effectuées */}
+        {/* Moyenne révisions */}
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-purple-600">
             {data.items.length > 0 
@@ -200,16 +222,33 @@ export const ToolBox: React.FC = () => {
           <div className="text-sm text-gray-600">Moyenne révisions/item</div>
         </div>
         
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <button
-            onClick={handleExport}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Exporter
-          </button>
+        {/* ✅ NOUVEAU : Boutons Exporter et Effacer sur 2 colonnes */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 col-span-2 md:col-span-2">
+          <div className="grid grid-cols-2 gap-2">
+            {/* Bouton Exporter */}
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+              title="Exporter toutes les corrections en fichier texte"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Exporter
+            </button>
+
+            {/* ✅ NOUVEAU : Bouton Effacer tout */}
+            <button
+              onClick={handleClearAll}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium border border-red-200"
+              title="Effacer toutes les corrections de la boîte à outils"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Effacer tout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -333,6 +372,7 @@ export const ToolBox: React.FC = () => {
           <li>✓ Développez un élément pour voir la correction, l'explication et le contexte</li>
           <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
           <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
+          <li>✓ Effacez tout pour repartir à zéro (action irréversible)</li>
         </ul>
       </div>
     </div>
