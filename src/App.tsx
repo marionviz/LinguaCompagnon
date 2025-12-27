@@ -516,7 +516,7 @@ Un apprenant`);
         </header>
         
         <main className="flex-grow overflow-y-auto">
-          <ToolBox />
+          <ToolBox weekNumber={currentWeek} />
         </main>
       </div>
     );
