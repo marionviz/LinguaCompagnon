@@ -251,7 +251,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 7,
     errorType: 'grammar',
     errorPattern: 'prépositions verbes',
-    strategy: 'Verbes + préposition fixe : bénéficier DE, aider À, offrir À, priver DE. À mémoriser.',
+    strategy: 'Verbes + préposition fixe : bénéficier DE, aider À, encourager À, priver DE. À mémoriser.',
     example: 'Il bénéficie DE droits. J\'aide À organiser.'
   },
   {
@@ -259,7 +259,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'vocabulary',
     errorPattern: 'préfixes antonymes',
     strategy: 'Préfixes négatifs : IN- (inefficace), DÉ- (déstabilisé), MAL- (malhonnête), IM- devant P/B (impossible).',
-    example: 'Efficace → INeffic ace. Honnête → MALhonnête.'
+    example: 'Efficace → INefficace. Honnête → MALhonnête.'
   },
   {
     weekNumber: 7,
@@ -290,7 +290,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 8,
     errorType: 'grammar',
     errorPattern: 'quantité proportion',
-    strategy: 'Fractions : la moitié (1/2), un tiers (1/3), un quart (1/4). Pourcentages : 25% DE.',
+    strategy: 'Fractions : la moitié (1/2), un tiers (1/3), un quart (1/4). Pourcentage : 25% DE.',
     example: 'La moitié DES déchets. 25% DE la population.'
   },
   {
@@ -354,7 +354,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 10,
     errorType: 'grammar',
     errorPattern: 'pronoms possessifs',
-    strategy: 'Pronoms possessifs = LE/LA/LES + MIEN/TIEN/SIEN/NÔTRE/VÔTRE/LEUR. Remplacent "mon/ton/son + nom".',
+    strategy: 'Pronoms possessifs = LE/LA/LES + MIEN/TIEN/SIEN/NÔTRE/VÔTRE/LEUR remplacent "mon/ton/son + nom".',
     example: 'Mon projet → LE MIEN. Tes idées → LES TIENNES.'
   },
   {
@@ -362,13 +362,13 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'grammar',
     errorPattern: 'cause conséquence',
     strategy: 'Cause : PARCE QUE, GRÂCE À. Conséquence : DONC, C\'EST POURQUOI, PAR CONSÉQUENT.',
-    example: 'Il pleut DONC je reste. PARCE QU\'il pleut.'
+    example: 'Il pleut DONC je reste. Je reste chez moi PARCE QU\'il pleut.'
   },
   {
     weekNumber: 10,
     errorType: 'vocabulary',
     errorPattern: 'nominalisation',
-    strategy: 'Verbe → Nom : décider → décision, construire → construction, protéger → protection. Souvent -TION, -MENT, -AGE.',
+    strategy: 'Verbe → Nom : décider → décision, construire → construction, protéger → protection. Noms féminins -TION, -TÉ, Noms masculins -MENT, -AGE.',
     example: 'Décider → la décision. Recycler → le recyclage.'
   },
   {
