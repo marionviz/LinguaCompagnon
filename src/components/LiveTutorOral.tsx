@@ -359,15 +359,19 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
             setErrorMsg("Erreur de connexion.");
           }
         },
-        config: {
+        
+       config: {
           responseModalities: [Modality.AUDIO],
           tools: [{ functionDeclarations: [correctionTool] }],
           speechConfig: {
-            voiceConfig: {  prebuiltVoiceConfig: { voiceName: 'fr-FR-Journey-D' } }
-          }
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'fr-FR-Journey-D' } }
+          },
+          systemInstruction: week.systemPrompt
+        }
+      };
 
       sessionPromiseRef.current = ai.live.connect(config);
-      
+
     } catch (err: any) {
       console.error("❌ Erreur:", err);
       setConnectionState(ConnectionState.ERROR);
