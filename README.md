@@ -13,7 +13,7 @@ LinguaCompagnon est un tuteur conversationnel intelligent qui accompagne les app
 
 ## 📚 Contexte pédagogique
 
-Développé dans le cadre du Master Ingénierie Pédagogique Multimodale (IPM) - Université de Lille, pour l'Organisation des Nations Unies à Genève.
+Développé dans le cadre du Master Ingénierie Pédagogique Multimodale (IPM) - Université de Lille
 
 ## 🚀 Démarrage rapide
 
