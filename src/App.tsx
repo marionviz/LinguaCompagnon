@@ -146,7 +146,7 @@ function App() {
       const systemPrompt = getSystemPrompt(week);
       
       const model = genAI.getGenerativeModel({
-        model: 'gemini-live-2.5-flash-native-audio',
+        model: 'gemini-2.0-flash-exp',
         systemInstruction: systemPrompt,
         generationConfig: {
           temperature: 1.2,
