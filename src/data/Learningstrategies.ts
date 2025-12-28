@@ -9,7 +9,7 @@ export interface LearningStrategy {
   example?: string; // Exemple concret
 }
 
-export const LEARNING_STRATEGIES: LearningStrategy[] = [
+export const LEARNING_STRATEGIES: LearningStrategies[] = [
   // ═══════════════════════════════════════════════════════════
   // SEMAINE 1 : RÉVISIONS
   // ═══════════════════════════════════════════════════════════

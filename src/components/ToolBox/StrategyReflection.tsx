@@ -1,7 +1,7 @@
 // src/components/ToolBox/StrategyReflection.tsx
 
 import React, { useState } from 'react';
-import { getStrategiesForWeek, getStrategiesByType, LearningStrategy } from '../../data/learningStrategies';
+import { getStrategiesForWeek, getStrategiesByType, LearningStrategies } from '../../data/learningStrategies';
 
 interface StrategyReflectionProps {
   weekNumber: number; // ✅ NOUVEAU : Semaine en cours
