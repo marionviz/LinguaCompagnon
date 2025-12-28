@@ -363,7 +363,7 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
           responseModalities: [Modality.AUDIO],
           tools: [{ functionDeclarations: [correctionTool] }],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } }
           },
           systemInstruction: week.systemPrompt
         }
