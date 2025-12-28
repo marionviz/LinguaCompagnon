@@ -392,8 +392,8 @@ Un apprenant`);
               </p>
               <ul className="text-sm text-gray-500 space-y-2 text-left">
                 <li>✓ Corrections visuelles</li>
+                <li>✓ Encouragement à rédiger</li>
                 <li>✓ Exercices de systématisation</li>
-                <li>✓ Lecture audio optionnelle</li>
               </ul>
             </button>
 
@@ -412,7 +412,7 @@ Un apprenant`);
     Conversation vocale avec l'avatar de François
   </p>
   <ul className="text-sm text-gray-500 space-y-2 text-left">
-    <li>✓ Pratique de la prononciation</li>
+    <li>✓ Interaction en contexte</li>
     <li>✓ Feedback immédiat</li>
     <li>✓ Boîte à outils intégrée</li>
   </ul>
