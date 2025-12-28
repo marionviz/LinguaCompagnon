@@ -715,7 +715,7 @@ const isValidCorrection = (correction: Correction): boolean => {
 
   {showToolbox && (
     <div className="mt-4">
-      <ToolBox />
+      <ToolBox weekNumber={weekNumber} />
     </div>
   )}
 </div>
