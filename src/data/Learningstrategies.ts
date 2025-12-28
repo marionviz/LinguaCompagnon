@@ -1,4 +1,4 @@
-// src/data/learningStrategies.ts
+// src/data/LearningStrategies.ts
 // Stratégies d'apprentissage ciblées par semaine et par type d'erreur
 
 export interface LearningStrategies {
