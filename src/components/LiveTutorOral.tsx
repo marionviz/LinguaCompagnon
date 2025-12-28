@@ -363,11 +363,8 @@ console.log('✅ Item ajouté, dispatch event toolboxUpdated');
           responseModalities: [Modality.AUDIO],
           tools: [{ functionDeclarations: [correctionTool] }],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } }
-          },
-          systemInstruction: week.systemPrompt
-        }
-      };
+            voiceConfig: {  prebuiltVoiceConfig: { voiceName: 'fr-FR-Journey-D' } }
+          }
 
       sessionPromiseRef.current = ai.live.connect(config);
       
