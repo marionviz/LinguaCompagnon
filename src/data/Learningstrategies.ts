@@ -1,7 +1,7 @@
 // src/data/learningStrategies.ts
 // Stratégies d'apprentissage ciblées par semaine et par type d'erreur
 
-export interface LearningStrategy {
+export interface LearningStrategies {
   weekNumber: number;
   errorType: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation';
   errorPattern: string; // Ce qui déclenche la stratégie
@@ -422,7 +422,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
 /**
  * Récupère les stratégies pour une semaine donnée
  */
-export function getStrategiesForWeek(weekNumber: number): LearningStrategy[] {
+export function getStrategiesForWeek(weekNumber: number): LearningStrategies[] {
   return LEARNING_STRATEGIES.filter(s => s.weekNumber === weekNumber);
 }
 
@@ -433,7 +433,7 @@ export function getStrategyByError(
   weekNumber: number, 
   errorType: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation',
   keyword: string
-): LearningStrategy | undefined {
+): LearningStrategies | undefined {
   const weekStrategies = getStrategiesForWeek(weekNumber);
   return weekStrategies.find(s => 
     s.errorType === errorType && 
@@ -447,6 +447,6 @@ export function getStrategyByError(
 export function getStrategiesByType(
   weekNumber: number,
   errorType: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation'
-): LearningStrategy[] {
+): LearningStrategies[] {
   return getStrategiesForWeek(weekNumber).filter(s => s.errorType === errorType);
 }
