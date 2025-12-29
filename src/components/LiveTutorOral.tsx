@@ -1,8 +1,8 @@
 // src/components/LiveTutorOral.tsx
-// VERSION COMPLÈTE HYBRIDE : Timer + Google TTS + Web Speech API + ToolBox
+// VERSION FINALE : TTS + Corrections automatiques + ToolBox
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
 import { ConnectionState, Correction } from '../typesOral';
 import { getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
@@ -12,6 +12,55 @@ interface LiveTutorOralProps {
   weekNumber: number;
   onClose: () => void;
 }
+
+// ═══════════════════════════════════════════════════════════
+// FUNCTION DECLARATION POUR CORRECTIONS
+// ═══════════════════════════════════════════════════════════
+
+const correctionTool: FunctionDeclaration = {
+  name: "signaler_correction",
+  description: `Signaler UNE correction à la fois quand l'apprenant fait une erreur.
+
+RÈGLES STRICTES :
+✅ Corriger UNIQUEMENT les VRAIES erreurs importantes
+❌ NE JAMAIS corriger si phrases identiques
+❌ NE JAMAIS inventer des erreurs
+
+TYPES D'ERREURS :
+- grammar : articles, accords, structure
+- conjugation : temps verbal, auxiliaire
+- vocabulary : mot inexistant
+- pronunciation : liaisons interdites
+
+EXEMPLES :
+✅ "Je suis allé à la Paris" → "Je suis allé à Paris" (grammar)
+✅ "Hier je mange" → "Hier j'ai mangé" (conjugation)
+❌ NE PAS corriger si déjà correct`,
+  
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      originalSentence: { 
+        type: SchemaType.STRING, 
+        description: "Phrase EXACTE avec l'erreur" 
+      },
+      correctedSentence: { 
+        type: SchemaType.STRING, 
+        description: "Version CORRIGÉE (doit être différente)" 
+      },
+      explanation: { 
+        type: SchemaType.STRING, 
+        description: "Explication brève (max 15 mots)" 
+      },
+      errorType: {
+        type: SchemaType.STRING,
+        description: "Type: pronunciation, grammar, vocabulary, conjugation",
+        enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
+      }
+    },
+    required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
+  },
+};
 
 const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) => {
   const week = getOralWeekConfig(weekNumber);
@@ -23,7 +72,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [transcript, setTranscript] = useState<string>('');
-  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'model', parts: Array<{text: string}>}>>([]);
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showToolbox, setShowToolbox] = useState(false);
@@ -61,7 +109,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }, [selectedDuration, connectionState, timeRemaining]);
 
   // ═══════════════════════════════════════════════════════════
-  // INITIALISATION GEMINI
+  // INITIALISATION GEMINI AVEC FUNCTION CALLING
   // ═══════════════════════════════════════════════════════════
   
   useEffect(() => {
@@ -77,9 +125,12 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       if (!apiKey) throw new Error("VITE_API_KEY manquante");
 
       const ai = new GoogleGenerativeAI(apiKey);
+      
+      // ✅ AVEC FUNCTION CALLING pour corrections
       const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        systemInstruction: week.systemPrompt
+        systemInstruction: week.systemPrompt,
+        tools: [{ functionDeclarations: [correctionTool] }],
       });
 
       const chat = model.startChat({
@@ -87,7 +138,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       });
 
       geminiChatRef.current = chat;
-      console.log('✅ Gemini Chat initialisé');
+      console.log('✅ Gemini Chat initialisé avec function calling');
     } catch (err) {
       console.error('❌ Erreur initialisation Gemini:', err);
       setErrorMsg('Erreur initialisation IA');
@@ -115,7 +166,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       recognition.lang = 'fr-FR';
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         console.log('🎤 Écoute démarrée');
@@ -127,37 +177,33 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         const userText = event.results[0][0].transcript.trim();
         const confidence = event.results[0][0].confidence;
         
-        console.log('📝 Transcription:', userText, '| Confiance:', confidence);
+        console.log('📝 Transcription:', userText);
+        console.log('   Confiance:', confidence);
         
-        // Ignorer si identique au dernier transcript (évite boucles)
+        // Ignorer si identique
         if (userText === lastTranscriptRef.current) {
-          console.log('⚠️ Transcription identique, ignorée');
+          console.log('⚠️ Identique, ignorée');
           isListeningRef.current = false;
           if (!isManualMode) {
-            setTimeout(() => startListening(), 1500);
+            setTimeout(() => startListening(), 2000);
           }
           return;
         }
 
-        // Ignorer si trop court ou faible confiance
+        // Ignorer si trop court
         if (userText.length < 3) {
-          console.log('⚠️ Transcription ignorée (trop courte ou confiance faible)');
+          console.log('⚠️ Trop courte');
           isListeningRef.current = false;
           if (!isManualMode) {
-            setTimeout(() => startListening(), 1500);
+            setTimeout(() => startListening(), 2000);
           }
           return;
         }
 
+        console.log('✅ Transcription acceptée');
         lastTranscriptRef.current = userText;
         setTranscript(userText);
         isListeningRef.current = false;
-
-        // Ajouter à l'historique
-        setConversationHistory(prev => [...prev, { 
-          role: 'user', 
-          parts: [{ text: userText }] 
-        }]);
 
         // Envoyer à Gemini
         await sendToGemini(userText);
@@ -167,11 +213,8 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         console.error('❌ Erreur reconnaissance:', event.error);
         isListeningRef.current = false;
         
-        if (event.error === 'no-speech') {
-          console.log('🔄 Pas de parole détectée');
-          if (!isManualMode) {
-            setTimeout(() => startListening(), 1500);
-          }
+        if (event.error === 'no-speech' && !isManualMode) {
+          setTimeout(() => startListening(), 2000);
         } else if (event.error !== 'aborted') {
           setErrorMsg('Erreur reconnaissance vocale');
         }
@@ -193,7 +236,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }, [isSpeaking, isManualMode]);
 
   // ═══════════════════════════════════════════════════════════
-  // GEMINI CHAT
+  // GEMINI CHAT AVEC FUNCTION CALLING
   // ═══════════════════════════════════════════════════════════
 
   const sendToGemini = async (userText: string) => {
@@ -204,45 +247,67 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       console.log('🔄 Envoi à Gemini...');
       const result = await geminiChatRef.current.sendMessage(userText);
-      const response = result.response.text();
       
-      console.log('✅ Réponse Gemini:', response);
-
-      // Ajouter à l'historique
-      setConversationHistory(prev => [...prev, { 
-        role: 'model', 
-        parts: [{ text: response }] 
-      }]);
-
-      // Extraire corrections
-      const extractedCorrections = extractCorrections(response, userText);
+      // ✅ GÉRER FUNCTION CALLS (corrections)
+      const response = result.response;
       
-      if (extractedCorrections.length > 0) {
-        console.log('📝 Corrections trouvées:', extractedCorrections);
-        setAllCorrections(prev => [...prev, ...extractedCorrections]);
-        saveCorrectionsToToolBox(extractedCorrections);
+      // Vérifier si Gemini veut appeler la fonction
+      const functionCalls = response.functionCalls();
+      
+      if (functionCalls && functionCalls.length > 0) {
+        console.log('🔧 Function calls reçus:', functionCalls);
+        
+        functionCalls.forEach((call: any) => {
+          if (call.name === 'signaler_correction') {
+            const correction: Correction = {
+              originalSentence: call.args.originalSentence,
+              correctedSentence: call.args.correctedSentence,
+              explanation: call.args.explanation,
+              errorType: call.args.errorType,
+            };
+            
+            console.log('📝 Correction détectée:', correction);
+            
+            // Ajouter à la liste
+            setAllCorrections(prev => [...prev, correction]);
+            
+            // Sauvegarder dans ToolBox
+            saveCorrectionsToToolBox([correction]);
+          }
+        });
+        
+        // Répondre au function call
+        const functionResponse = {
+          functionResponses: functionCalls.map((call: any) => ({
+            name: call.name,
+            response: { result: "Correction enregistrée" }
+          }))
+        };
+        
+        // Continuer la conversation
+        const finalResult = await geminiChatRef.current.sendMessage([functionResponse]);
+        const finalText = finalResult.response.text();
+        
+        console.log('✅ Réponse finale:', finalText);
+        await speakWithGoogleTTS(finalText);
+        
+      } else {
+        // Pas de correction, réponse simple
+        const textResponse = response.text();
+        console.log('✅ Réponse Gemini:', textResponse);
+        await speakWithGoogleTTS(textResponse);
       }
-
-      // Synthèse vocale
-      await speakWithGoogleTTS(response);
 
       // Relancer l'écoute
       if (!isManualMode) {
-  console.log('⏳ Attente 3s avant relance écoute...');
-  console.log('   - isSpeaking:', isSpeaking);
-  console.log('   - connectionState:', connectionState);
-  
-  setTimeout(() => {
-    console.log('⏰ Timeout terminé');
-    console.log('   - isSpeaking:', isSpeaking);
-    if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
-      console.log('✅ Relance écoute');
-      startListening();
-    } else {
-      console.log('❌ Pas de relance - conditions non remplies');
-    }
-  }, 3000);
-}
+        console.log('⏳ Attente 3s avant relance...');
+        setTimeout(() => {
+          if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
+            console.log('✅ Relance écoute');
+            startListening();
+          }
+        }, 3000);
+      }
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
@@ -259,54 +324,20 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   // ═══════════════════════════════════════════════════════════
-  // EXTRACTION CORRECTIONS
-  // ═══════════════════════════════════════════════════════════
-
-  const extractCorrections = (response: string, originalText: string): Correction[] => {
-    const corrections: Correction[] = [];
-    
-    const patterns = [
-      /(?:erreur|incorrect|faux|attention).*?["«](.+?)["»].*?(?:devrait être|dire|correct|plutôt).*?["«](.+?)["»]/gi,
-      /["«](.+?)["»]\s*(?:→|=>|➜)\s*["«](.+?)["»]/gi,
-      /vous avez dit\s+["«](.+?)["»].*?(?:mais|correct|devrait).*?["«](.+?)["»]/gi,
-    ];
-
-    for (const pattern of patterns) {
-      let match;
-      while ((match = pattern.exec(response)) !== null) {
-        const original = match[1].trim();
-        const corrected = match[2].trim();
-        
-        if (original.toLowerCase() !== corrected.toLowerCase()) {
-          corrections.push({
-            originalSentence: original,
-            correctedSentence: corrected,
-            explanation: 'Correction identifiée par François',
-          });
-        }
-      }
-    }
-
-    console.log('✅ Corrections extraites:', corrections.length);
-    return corrections;
-  };
-
-  // ═══════════════════════════════════════════════════════════
   // SAUVEGARDE TOOLBOX
   // ═══════════════════════════════════════════════════════════
 
   const saveCorrectionsToToolBox = (corrections: Correction[]) => {
-    if (corrections.length === 0) {
-      console.log('ℹ️ Pas de correction à sauvegarder');
-      return;
-    }
+    if (corrections.length === 0) return;
 
-    console.log('💾 Sauvegarde de', corrections.length, 'correction(s)...');
+    console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
 
-    corrections.forEach((correction, index) => {
+    corrections.forEach((correction) => {
+      const category = correction.errorType || 'grammar';
+      
       addItem({
-        category: 'grammar',
-        title: `Correction ${index + 1}`,
+        category: category as any,
+        title: `Correction - ${category}`,
         description: correction.explanation,
         example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
         errorContext: `Semaine ${weekNumber} - Mode Oral`,
@@ -325,7 +356,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const speakWithGoogleTTS = async (text: string) => {
     try {
       setIsSpeaking(true);
-      console.log('🔊 Synthèse vocale Google TTS...');
+      console.log('🔊 Synthèse TTS...');
 
       const apiKey = import.meta.env.VITE_API_KEY;
       
@@ -350,7 +381,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       );
 
       if (!response.ok) {
-        throw new Error(`TTS API error: ${response.status}`);
+        throw new Error(`TTS error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -367,25 +398,18 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   const speakWithBrowserTTS = async (text: string) => {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'fr-FR';
-      utterance.rate = 1.0;
-
-      const voices = speechSynthesis.getVoices();
-      const frenchVoice = voices.find(v => v.lang.startsWith('fr'));
-      if (frenchVoice) {
-        utterance.voice = frenchVoice;
-      }
 
       utterance.onend = () => {
         setIsSpeaking(false);
         resolve();
       };
 
-      utterance.onerror = (err) => {
+      utterance.onerror = () => {
         setIsSpeaking(false);
-        reject(err);
+        resolve();
       };
 
       speechSynthesis.speak(utterance);
@@ -393,33 +417,27 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   const playAudioBase64 = async (base64Audio: string) => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const audioContext = audioContextRef.current;
-      
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-
-      return new Promise<void>((resolve) => {
-        source.onended = () => resolve();
-        source.start(0);
-      });
-
-    } catch (err) {
-      console.error('❌ Erreur lecture audio:', err);
-      throw err;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
+
+    const audioContext = audioContextRef.current;
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+
+    return new Promise<void>((resolve) => {
+      source.onended = () => resolve();
+      source.start(0);
+    });
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -434,26 +452,20 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
       setAllCorrections([]);
-      setConversationHistory([]);
-      setIsManualMode(false); // ✅ FORCER mode automatique
-      console.log('🎬 Mode automatique activé');
+      setIsManualMode(false);
 
-      // Vérifier micro
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       console.log('✅ Session démarrée');
       setConnectionState(ConnectionState.CONNECTED);
 
-      // Message d'accueil
-      const greeting = `Bonjour ! Je suis François, votre tuteur de français. Nous travaillons sur la semaine ${weekNumber}. ${week.description}. Commençons !`;
+      const greeting = `Bonjour ! Je suis François. Nous travaillons sur la semaine ${weekNumber}. ${week.description}. Commençons !`;
       await speakWithGoogleTTS(greeting);
 
-      // Démarrer l'écoute
-      if (!isManualMode) {
-        setTimeout(() => {
-          startListening();
-        }, 2000);
-      }
+      setTimeout(() => {
+        console.log('✅ Première écoute');
+        startListening();
+      }, 2000);
 
     } catch (err: any) {
       console.error('❌ Erreur démarrage:', err);
@@ -468,9 +480,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
   const cleanup = () => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
+      try { recognitionRef.current.stop(); } catch (e) {}
       recognitionRef.current = null;
     }
 
@@ -492,40 +502,32 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     onClose();
   };
 
-  // ═══════════════════════════════════════════════════════════
-  // BOUTON "UN DOUTE"
-  // ═══════════════════════════════════════════════════════════
-
   const handleReportDoubt = () => {
     const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
     
-    let correctionsText = '=== CORRECTIONS REÇUES ===\n\n';
+    let correctionsText = '=== CORRECTIONS ===\n\n';
     if (allCorrections.length === 0) {
-      correctionsText += '(Aucune correction)\n\n';
+      correctionsText += '(Aucune)\n\n';
     } else {
-      allCorrections.forEach((correction, index) => {
-        correctionsText += `[${index + 1}]\n`;
-        correctionsText += `   Original : ${correction.originalSentence}\n`;
-        correctionsText += `   Corrigé  : ${correction.correctedSentence}\n`;
-        correctionsText += `   Explication : ${correction.explanation}\n\n`;
+      allCorrections.forEach((c, i) => {
+        correctionsText += `[${i + 1}] ${c.errorType}\n`;
+        correctionsText += `   ❌ ${c.originalSentence}\n`;
+        correctionsText += `   ✅ ${c.correctedSentence}\n`;
+        correctionsText += `   💡 ${c.explanation}\n\n`;
       });
     }
     
-    const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL');
+    const subject = encodeURIComponent('🚨 Doute - Mode ORAL');
     const body = encodeURIComponent(`Bonjour Marion,
 
-J'ai un doute concernant une correction.
-
-CONTEXTE :
-- Semaine : ${week.title}
-- Date : ${new Date().toLocaleString('fr-FR')}
-- Durée : ${formatTime(elapsedTime)}
-- Corrections : ${allCorrections.length}
+Semaine : ${week.title}
+Date : ${new Date().toLocaleString('fr-FR')}
+Durée : ${formatTime(elapsedTime)}
 
 ${correctionsText}
 
-COMMENTAIRE :
-(Ajoutez vos commentaires ici)
+Commentaire :
+(Ajoutez vos commentaires)
 
 Cordialement`);
 
@@ -542,63 +544,45 @@ Cordialement`);
   // RENDU UI
   // ═══════════════════════════════════════════════════════════
 
-  // SÉLECTEUR DURÉE
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
-        <header className="p-4 border-b bg-white/80 backdrop-blur-sm">
+        <header className="p-4 border-b bg-white/80">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
               <div>
-                <h1 className="text-xl font-bold text-gray-800">
+                <h1 className="text-xl font-bold">
                   Lingua<span className="text-brand-green">Compagnon</span>
                 </h1>
                 <p className="text-xs text-gray-500">Mode Oral - Semaine {week.id}</p>
               </div>
             </div>
-            <button onClick={onClose} className="px-4 py-2 bg-red-500/20 text-red-600 rounded-lg hover:bg-red-500/30">
+            <button onClick={onClose} className="px-4 py-2 bg-red-500/20 text-red-600 rounded-lg">
               ← Retour
             </button>
           </div>
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Combien de temps voulez-vous pratiquer ?
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Choisissez la durée de votre conversation avec François
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
-            {[2, 5, 8, 10].map((duration) => (
+          <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
+            {[2, 5, 8, 10].map((d) => (
               <button
-                key={duration}
-                onClick={() => startSession(duration)}
-                className="group p-8 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all"
+                key={d}
+                onClick={() => startSession(d)}
+                className="p-8 bg-white rounded-xl border-2 hover:border-brand-green hover:shadow-xl transition-all"
               >
-                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">
-                  {duration}
-                </div>
-                <div className="text-sm text-gray-600">
-                  minute{duration > 1 ? 's' : ''}
-                </div>
+                <div className="text-5xl font-bold text-brand-green">{d}</div>
+                <div className="text-sm text-gray-600">minute{d > 1 ? 's' : ''}</div>
               </button>
             ))}
-          </div>
-
-          <div className="mt-8 text-center text-gray-500 text-sm">
-            💡 Conseil : Commencez par 2-5 minutes
           </div>
         </main>
       </div>
     );
   }
 
-  // SESSION EN COURS
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
       {showToolboxNotification && (
@@ -607,15 +591,15 @@ Cordialement`);
         </div>
       )}
       
-      <header className="p-4 border-b bg-white/80 backdrop-blur-sm">
+      <header className="p-4 border-b bg-white/80">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
             <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
             <div>
-              <h1 className="text-xl font-bold text-gray-800">
+              <h1 className="text-xl font-bold">
                 Lingua<span className="text-brand-green">Compagnon</span>
               </h1>
-              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
+              <p className="text-xs text-gray-500">{week.title}</p>
             </div>
           </div>
           
@@ -641,29 +625,22 @@ Cordialement`);
             </button>
           </div>
         </div>
-        <p className="text-sm text-gray-600">
-          <span className="font-semibold">Objectif :</span> {week.description}
-        </p>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTING && (
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-lg font-medium text-gray-700">Connexion...</p>
+              <p>Connexion...</p>
             </div>
           )}
 
           {connectionState === ConnectionState.ERROR && (
             <div className="text-center">
               <div className="text-6xl mb-4">❌</div>
-              <p className="text-xl text-red-600 mb-4">Erreur</p>
-              <p className="text-gray-600 mb-4">{errorMsg}</p>
-              <button
-                onClick={() => setShowDurationSelector(true)}
-                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              >
+              <p className="text-red-600 mb-4">{errorMsg}</p>
+              <button onClick={() => setShowDurationSelector(true)} className="px-6 py-3 bg-red-500 text-white rounded-lg">
                 Réessayer
               </button>
             </div>
@@ -671,59 +648,39 @@ Cordialement`);
 
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
-              <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 ${
-                isSpeaking 
-                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse shadow-2xl' 
-                  : isListeningRef.current 
-                  ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse shadow-2xl'
-                  : 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-2xl'
+              <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
+                isSpeaking ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse' :
+                isListeningRef.current ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse' :
+                'bg-gradient-to-br from-green-400 to-emerald-500'
               }`}>
                 <div className="text-6xl text-white">
                   {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '✓'}
                 </div>
               </div>
 
-              <div className="text-xl font-semibold text-gray-800 mb-4">
+              <div className="text-xl font-semibold mb-4">
                 {isSpeaking ? 'François parle...' : isListeningRef.current ? 'Je vous écoute...' : 'Prêt'}
               </div>
 
               {transcript && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl mb-4">
-                  <p className="text-sm text-gray-600 mb-1">Vous avez dit :</p>
+                <div className="bg-white border rounded-lg p-4 max-w-2xl mb-4">
+                  <p className="text-sm text-gray-600">Vous :</p>
                   <p className="text-gray-800">{transcript}</p>
                 </div>
               )}
-
-              {!isSpeaking && !isListeningRef.current && isManualMode && (
-                <button
-                  onClick={() => startListening()}
-                  className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 shadow-lg"
-                >
-                  🎤 Parler à François
-                </button>
-              )}
-
-              <button
-                onClick={() => setIsManualMode(!isManualMode)}
-                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
-              >
-                {isManualMode ? '🔄 Mode automatique' : '👆 Mode manuel'}
-              </button>
             </div>
           )}
         </div>
 
         {allCorrections.length > 0 && (
           <div className="mt-6 bg-white border rounded-lg p-4">
-            <h3 className="text-sm font-bold text-gray-800 mb-3">
-              📝 Corrections ({allCorrections.length})
-            </h3>
+            <h3 className="text-sm font-bold mb-3">📝 Corrections ({allCorrections.length})</h3>
             <div className="space-y-3">
-              {allCorrections.map((correction, index) => (
-                <div key={index} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
-                  <div className="text-sm text-gray-500 line-through">{correction.originalSentence}</div>
-                  <div className="text-sm font-semibold text-gray-800">→ {correction.correctedSentence}</div>
-                  <p className="text-xs text-gray-600 italic mt-1">💡 {correction.explanation}</p>
+              {allCorrections.map((c, i) => (
+                <div key={i} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
+                  <div className="text-sm text-gray-500 line-through">{c.originalSentence}</div>
+                  <div className="text-sm font-semibold text-gray-800">→ {c.correctedSentence}</div>
+                  <p className="text-xs text-gray-600 italic mt-1">💡 {c.explanation}</p>
                 </div>
               ))}
             </div>
@@ -737,7 +694,7 @@ Cordialement`);
           className="w-full flex items-center justify-between px-4 py-3 bg-brand-green hover:bg-green-700 text-white rounded-lg"
         >
           <div className="flex items-center gap-3">
-            <span className="text-xl">🛠️</span>
+            <span>🛠️</span>
             <span className="font-semibold">Ma Boîte à Outils</span>
           </div>
           <svg className={`w-5 h-5 transition-transform ${showToolbox ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
