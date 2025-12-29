@@ -1,5 +1,5 @@
 // src/components/LiveTutorOral.tsx
-// VERSION HYBRIDE : Web Speech API + Gemini Chat + Google Cloud TTS
+// VERSION COMPLÈTE HYBRIDE : Timer + Google TTS + Web Speech API + ToolBox
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -17,21 +17,51 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const week = getOralWeekConfig(weekNumber);
   const { addItem } = useToolBox();
   
+  // États
+  const [showDurationSelector, setShowDurationSelector] = useState(true);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [transcript, setTranscript] = useState<string>('');
   const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'model', parts: Array<{text: string}>}>>([]);
-  const [corrections, setCorrections] = useState<Correction[]>([]);
+  const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showToolbox, setShowToolbox] = useState(false);
+  const [showToolboxNotification, setShowToolboxNotification] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
 
+  // Refs
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const geminiChatRef = useRef<any>(null);
   const isListeningRef = useRef(false);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTranscriptRef = useRef<string>('');
 
   // ═══════════════════════════════════════════════════════════
-  // INITIALISATION GEMINI CHAT
+  // TIMER
+  // ═══════════════════════════════════════════════════════════
+  
+  useEffect(() => {
+    if (selectedDuration && connectionState === ConnectionState.CONNECTED && timeRemaining > 0) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            handleEndCall();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      };
+    }
+  }, [selectedDuration, connectionState, timeRemaining]);
+
+  // ═══════════════════════════════════════════════════════════
+  // INITIALISATION GEMINI
   // ═══════════════════════════════════════════════════════════
   
   useEffect(() => {
@@ -48,7 +78,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const ai = new GoogleGenerativeAI(apiKey);
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-1.5-flash',
         systemInstruction: week.systemPrompt
       });
 
@@ -66,11 +96,14 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   // ═══════════════════════════════════════════════════════════
-  // RECONNAISSANCE VOCALE (Web Speech API)
+  // RECONNAISSANCE VOCALE
   // ═══════════════════════════════════════════════════════════
 
   const startListening = useCallback(() => {
-    if (isListeningRef.current || isSpeaking) return;
+    if (isListeningRef.current || isSpeaking) {
+      console.log('⏸️ Écoute déjà active ou François parle');
+      return;
+    }
 
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -82,6 +115,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       recognition.lang = 'fr-FR';
       recognition.continuous = false;
       recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         console.log('🎤 Écoute démarrée');
@@ -90,8 +124,32 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       };
 
       recognition.onresult = async (event: any) => {
-        const userText = event.results[0][0].transcript;
-        console.log('📝 Transcription:', userText);
+        const userText = event.results[0][0].transcript.trim();
+        const confidence = event.results[0][0].confidence;
+        
+        console.log('📝 Transcription:', userText, '| Confiance:', confidence);
+        
+        // Ignorer si identique au dernier transcript (évite boucles)
+        if (userText === lastTranscriptRef.current) {
+          console.log('⚠️ Transcription identique, ignorée');
+          isListeningRef.current = false;
+          if (!isManualMode) {
+            setTimeout(() => startListening(), 1500);
+          }
+          return;
+        }
+
+        // Ignorer si trop court ou faible confiance
+        if (userText.length < 3 || confidence < 0.5) {
+          console.log('⚠️ Transcription ignorée (trop courte ou confiance faible)');
+          isListeningRef.current = false;
+          if (!isManualMode) {
+            setTimeout(() => startListening(), 1500);
+          }
+          return;
+        }
+
+        lastTranscriptRef.current = userText;
         setTranscript(userText);
         isListeningRef.current = false;
 
@@ -108,7 +166,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       recognition.onerror = (event: any) => {
         console.error('❌ Erreur reconnaissance:', event.error);
         isListeningRef.current = false;
-        if (event.error !== 'no-speech') {
+        
+        if (event.error === 'no-speech') {
+          console.log('🔄 Pas de parole détectée');
+          if (!isManualMode) {
+            setTimeout(() => startListening(), 1500);
+          }
+        } else if (event.error !== 'aborted') {
           setErrorMsg('Erreur reconnaissance vocale');
         }
       };
@@ -126,10 +190,10 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       setErrorMsg('Microphone non accessible');
       setConnectionState(ConnectionState.ERROR);
     }
-  }, [isSpeaking]);
+  }, [isSpeaking, isManualMode]);
 
   // ═══════════════════════════════════════════════════════════
-  // GEMINI CHAT (Analyse + Corrections)
+  // GEMINI CHAT
   // ═══════════════════════════════════════════════════════════
 
   const sendToGemini = async (userText: string) => {
@@ -150,71 +214,105 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         parts: [{ text: response }] 
       }]);
 
-      // Parser les corrections
+      // Extraire corrections
       const extractedCorrections = extractCorrections(response, userText);
       
       if (extractedCorrections.length > 0) {
-        setCorrections(prev => [...prev, ...extractedCorrections]);
+        console.log('📝 Corrections trouvées:', extractedCorrections);
+        setAllCorrections(prev => [...prev, ...extractedCorrections]);
         saveCorrectionsToToolBox(extractedCorrections);
       }
 
-      // Synthétiser la voix avec Google TTS
+      // Synthèse vocale
       await speakWithGoogleTTS(response);
 
-      // Relancer l'écoute après que François ait parlé
-      setTimeout(() => {
-        if (connectionState === ConnectionState.CONNECTED) {
-          startListening();
-        }
-      }, 500);
+      // Relancer l'écoute
+      if (!isManualMode) {
+        console.log('⏳ Attente 1.5s avant relance écoute...');
+        setTimeout(() => {
+          if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
+            console.log('🔄 Relance automatique écoute');
+            startListening();
+          }
+        }, 1500);
+      }
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
       setErrorMsg('Erreur traitement IA');
-      setConnectionState(ConnectionState.ERROR);
+      
+      if (!isManualMode) {
+        setTimeout(() => {
+          if (connectionState === ConnectionState.CONNECTED) {
+            startListening();
+          }
+        }, 2000);
+      }
     }
   };
 
-  // Extraction des corrections
+  // ═══════════════════════════════════════════════════════════
+  // EXTRACTION CORRECTIONS
+  // ═══════════════════════════════════════════════════════════
+
   const extractCorrections = (response: string, originalText: string): Correction[] => {
     const corrections: Correction[] = [];
     
-    const correctionPatterns = [
-      /(?:erreur|incorrect|faux|attention).*?["«](.+?)["»].*?(?:devrait être|dire|correct).*?["«](.+?)["»]/gi,
-      /["«](.+?)["»].*?(?:→|=>|devrait être|correct).*?["«](.+?)["»]/gi
+    const patterns = [
+      /(?:erreur|incorrect|faux|attention).*?["«](.+?)["»].*?(?:devrait être|dire|correct|plutôt).*?["«](.+?)["»]/gi,
+      /["«](.+?)["»]\s*(?:→|=>|➜)\s*["«](.+?)["»]/gi,
+      /vous avez dit\s+["«](.+?)["»].*?(?:mais|correct|devrait).*?["«](.+?)["»]/gi,
     ];
 
-    for (const pattern of correctionPatterns) {
+    for (const pattern of patterns) {
       let match;
       while ((match = pattern.exec(response)) !== null) {
-        corrections.push({
-          originalSentence: match[1].trim(),
-          correctedSentence: match[2].trim(),
-          explanation: 'Correction identifiée',
-        });
+        const original = match[1].trim();
+        const corrected = match[2].trim();
+        
+        if (original.toLowerCase() !== corrected.toLowerCase()) {
+          corrections.push({
+            originalSentence: original,
+            correctedSentence: corrected,
+            explanation: 'Correction identifiée par François',
+          });
+        }
       }
     }
 
+    console.log('✅ Corrections extraites:', corrections.length);
     return corrections;
   };
 
-  // Sauvegarder dans la ToolBox
+  // ═══════════════════════════════════════════════════════════
+  // SAUVEGARDE TOOLBOX
+  // ═══════════════════════════════════════════════════════════
+
   const saveCorrectionsToToolBox = (corrections: Correction[]) => {
-    corrections.forEach(correction => {
+    if (corrections.length === 0) {
+      console.log('ℹ️ Pas de correction à sauvegarder');
+      return;
+    }
+
+    console.log('💾 Sauvegarde de', corrections.length, 'correction(s)...');
+
+    corrections.forEach((correction, index) => {
       addItem({
         category: 'grammar',
-        title: 'Correction orale',
+        title: `Correction ${index + 1}`,
         description: correction.explanation,
         example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
-        errorContext: `Semaine ${weekNumber}`,
+        errorContext: `Semaine ${weekNumber} - Mode Oral`,
       });
     });
 
     window.dispatchEvent(new Event('toolboxUpdated'));
+    setShowToolboxNotification(true);
+    setTimeout(() => setShowToolboxNotification(false), 3000);
   };
 
   // ═══════════════════════════════════════════════════════════
-  // GOOGLE CLOUD TEXT-TO-SPEECH (Voix française native)
+  // GOOGLE CLOUD TTS
   // ═══════════════════════════════════════════════════════════
 
   const speakWithGoogleTTS = async (text: string) => {
@@ -233,7 +331,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             input: { text },
             voice: {
               languageCode: 'fr-FR',
-              name: 'fr-FR-Neural2-B', // ✅ Voix masculine française native
+              name: 'fr-FR-Neural2-B',
             },
             audioConfig: {
               audioEncoding: 'MP3',
@@ -249,9 +347,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       }
 
       const data = await response.json();
-      const audioContent = data.audioContent;
-
-      await playAudioBase64(audioContent);
+      await playAudioBase64(data.audioContent);
 
       console.log('✅ Audio joué');
       setIsSpeaking(false);
@@ -259,20 +355,15 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     } catch (err: any) {
       console.error('❌ Erreur TTS:', err);
       setIsSpeaking(false);
-      
-      // Fallback : synthèse navigateur
-      console.log('🔄 Fallback vers synthèse navigateur...');
       await speakWithBrowserTTS(text);
     }
   };
 
-  // Fallback : Synthèse vocale navigateur
   const speakWithBrowserTTS = async (text: string) => {
     return new Promise<void>((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'fr-FR';
       utterance.rate = 1.0;
-      utterance.pitch = 1.0;
 
       const voices = speechSynthesis.getVoices();
       const frenchVoice = voices.find(v => v.lang.startsWith('fr'));
@@ -286,7 +377,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       };
 
       utterance.onerror = (err) => {
-        console.error('❌ Erreur synthèse navigateur:', err);
         setIsSpeaking(false);
         reject(err);
       };
@@ -295,7 +385,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     });
   };
 
-  // Jouer l'audio depuis base64
   const playAudioBase64 = async (base64Audio: string) => {
     try {
       if (!audioContextRef.current) {
@@ -311,7 +400,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       }
 
       const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
-
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContext.destination);
@@ -331,27 +419,32 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   // DÉMARRAGE SESSION
   // ═══════════════════════════════════════════════════════════
 
-  const startSession = async () => {
+  const startSession = async (duration: number) => {
     try {
+      setSelectedDuration(duration);
+      setTimeRemaining(duration * 60);
+      setShowDurationSelector(false);
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
-      setCorrections([]);
+      setAllCorrections([]);
       setConversationHistory([]);
 
-      // Vérifier le micro
+      // Vérifier micro
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       console.log('✅ Session démarrée');
       setConnectionState(ConnectionState.CONNECTED);
 
       // Message d'accueil
-      const greeting = `Bonjour ! Je suis François, votre tuteur de français. Nous travaillons sur la semaine ${weekNumber}. Commençons !`;
+      const greeting = `Bonjour ! Je suis François, votre tuteur de français. Nous travaillons sur la semaine ${weekNumber}. ${week.description}. Commençons !`;
       await speakWithGoogleTTS(greeting);
 
-      // Démarrer l'écoute après l'accueil
-      setTimeout(() => {
-        startListening();
-      }, 500);
+      // Démarrer l'écoute
+      if (!isManualMode) {
+        setTimeout(() => {
+          startListening();
+        }, 500);
+      }
 
     } catch (err: any) {
       console.error('❌ Erreur démarrage:', err);
@@ -379,147 +472,266 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
     speechSynthesis.cancel();
     isListeningRef.current = false;
+
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+  };
+
+  const handleEndCall = () => {
+    cleanup();
+    onClose();
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // BOUTON "UN DOUTE"
+  // ═══════════════════════════════════════════════════════════
+
+  const handleReportDoubt = () => {
+    const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
+    
+    let correctionsText = '=== CORRECTIONS REÇUES ===\n\n';
+    if (allCorrections.length === 0) {
+      correctionsText += '(Aucune correction)\n\n';
+    } else {
+      allCorrections.forEach((correction, index) => {
+        correctionsText += `[${index + 1}]\n`;
+        correctionsText += `   Original : ${correction.originalSentence}\n`;
+        correctionsText += `   Corrigé  : ${correction.correctedSentence}\n`;
+        correctionsText += `   Explication : ${correction.explanation}\n\n`;
+      });
+    }
+    
+    const subject = encodeURIComponent('🚨 Doute sur correction - Mode ORAL');
+    const body = encodeURIComponent(`Bonjour Marion,
+
+J'ai un doute concernant une correction.
+
+CONTEXTE :
+- Semaine : ${week.title}
+- Date : ${new Date().toLocaleString('fr-FR')}
+- Durée : ${formatTime(elapsedTime)}
+- Corrections : ${allCorrections.length}
+
+${correctionsText}
+
+COMMENTAIRE :
+(Ajoutez vos commentaires ici)
+
+Cordialement`);
+
+    window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // ═══════════════════════════════════════════════════════════
   // RENDU UI
   // ═══════════════════════════════════════════════════════════
 
-  const getStateDisplay = () => {
-    if (isSpeaking) {
-      return { icon: '🔊', text: 'François parle...', color: 'text-blue-500' };
-    }
-    if (isListeningRef.current) {
-      return { icon: '🎤', text: 'Je vous écoute...', color: 'text-purple-500 animate-pulse' };
-    }
-
-    switch (connectionState) {
-      case ConnectionState.DISCONNECTED:
-        return { icon: '⚪', text: 'Déconnecté', color: 'text-gray-500' };
-      case ConnectionState.CONNECTING:
-        return { icon: '🔄', text: 'Connexion...', color: 'text-blue-500' };
-      case ConnectionState.CONNECTED:
-        return { icon: '🟢', text: 'Connecté', color: 'text-green-500' };
-      case ConnectionState.ERROR:
-        return { icon: '❌', text: 'Erreur', color: 'text-red-500' };
-      default:
-        return { icon: '⚪', text: 'Inconnu', color: 'text-gray-500' };
-    }
-  };
-
-  const stateDisplay = getStateDisplay();
-
-  return (
-    <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      {/* HEADER */}
-      <header className="p-6 border-b bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              🎤 François - Mode Oral Hybride
-            </h1>
-            <p className="text-sm text-gray-600">Semaine {weekNumber} • Voix française native</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            ← Retour
-          </button>
-        </div>
-      </header>
-
-      {/* MAIN */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6">
-        {connectionState === ConnectionState.DISCONNECTED && (
-          <div className="text-center">
-            <button
-              onClick={startSession}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-            >
-              🎤 Démarrer la conversation
+  // SÉLECTEUR DURÉE
+  if (showDurationSelector) {
+    return (
+      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
+        <header className="p-4 border-b bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">
+                  Lingua<span className="text-brand-green">Compagnon</span>
+                </h1>
+                <p className="text-xs text-gray-500">Mode Oral - Semaine {week.id}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="px-4 py-2 bg-red-500/20 text-red-600 rounded-lg hover:bg-red-500/30">
+              ← Retour
             </button>
-            <p className="mt-4 text-sm text-gray-600">
-              Solution hybride : Gemini Chat + Google TTS
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+              Combien de temps voulez-vous pratiquer ?
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Choisissez la durée de votre conversation avec François
             </p>
           </div>
-        )}
 
-        {connectionState === ConnectionState.CONNECTING && (
-          <div className="text-center">
-            <div className="w-24 h-24 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-lg text-gray-700">Connexion...</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
+            {[2, 5, 8, 10].map((duration) => (
+              <button
+                key={duration}
+                onClick={() => startSession(duration)}
+                className="group p-8 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all"
+              >
+                <div className="text-5xl font-bold text-brand-green group-hover:scale-110 transition-transform">
+                  {duration}
+                </div>
+                <div className="text-sm text-gray-600">
+                  minute{duration > 1 ? 's' : ''}
+                </div>
+              </button>
+            ))}
           </div>
-        )}
 
-        {connectionState === ConnectionState.CONNECTED && (
-          <div className="text-center">
-            <div className={`w-48 h-48 rounded-full flex items-center justify-center text-6xl shadow-2xl mb-6 ${
-              isSpeaking ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse' :
-              isListeningRef.current ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse' :
-              'bg-gradient-to-br from-green-400 to-emerald-500'
-            }`}>
-              {stateDisplay.icon}
+          <div className="mt-8 text-center text-gray-500 text-sm">
+            💡 Conseil : Commencez par 2-5 minutes
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // SESSION EN COURS
+  return (
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
+      {showToolboxNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl">
+          ✅ Ajouté à votre boîte à outils !
+        </div>
+      )}
+      
+      <header className="p-4 border-b bg-white/80 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-3">
+            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                Lingua<span className="text-brand-green">Compagnon</span>
+              </h1>
+              <p className="text-xs text-gray-500">Mode Oral - {week.title}</p>
             </div>
-
-            <div className={`text-xl font-semibold ${stateDisplay.color} mb-4`}>
-              {stateDisplay.text}
-            </div>
-
-            {transcript && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl mb-4">
-                <p className="text-sm text-gray-600 mb-1">Vous avez dit :</p>
-                <p className="text-gray-800">{transcript}</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="px-4 py-2 bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-brand-green">
+                {formatTime(timeRemaining)}
               </div>
-            )}
-
-            {connectionState === ConnectionState.CONNECTED && !isSpeaking && !isListeningRef.current && (
-            <button
-            onClick={() => startListening()}
-            className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors shadow-lg"
+            </div>
+            
+            <button 
+              onClick={handleReportDoubt}
+              className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-medium rounded-lg"
             >
-            🎤 Parler à nouveau
+              ⚠️ Un doute ?
             </button>
-            )}
+            
+            <button 
+              onClick={handleEndCall} 
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+            >
+              ✕ Terminer
+            </button>
           </div>
-        )}
+        </div>
+        <p className="text-sm text-gray-600">
+          <span className="font-semibold">Objectif :</span> {week.description}
+        </p>
+      </header>
 
-        {connectionState === ConnectionState.ERROR && (
-          <div className="text-center">
-            <div className="text-6xl mb-4">❌</div>
-            <p className="text-xl text-red-600 mb-4">Erreur</p>
-            <p className="text-gray-600 mb-4">{errorMsg}</p>
-            <button
-              onClick={startSession}
-              className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Réessayer
-            </button>
+      <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+          {connectionState === ConnectionState.CONNECTING && (
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg font-medium text-gray-700">Connexion...</p>
+            </div>
+          )}
+
+          {connectionState === ConnectionState.ERROR && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">❌</div>
+              <p className="text-xl text-red-600 mb-4">Erreur</p>
+              <p className="text-gray-600 mb-4">{errorMsg}</p>
+              <button
+                onClick={() => setShowDurationSelector(true)}
+                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Réessayer
+              </button>
+            </div>
+          )}
+
+          {connectionState === ConnectionState.CONNECTED && (
+            <div className="text-center">
+              <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 ${
+                isSpeaking 
+                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse shadow-2xl' 
+                  : isListeningRef.current 
+                  ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse shadow-2xl'
+                  : 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-2xl'
+              }`}>
+                <div className="text-6xl text-white">
+                  {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '✓'}
+                </div>
+              </div>
+
+              <div className="text-xl font-semibold text-gray-800 mb-4">
+                {isSpeaking ? 'François parle...' : isListeningRef.current ? 'Je vous écoute...' : 'Prêt'}
+              </div>
+
+              {transcript && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl mb-4">
+                  <p className="text-sm text-gray-600 mb-1">Vous avez dit :</p>
+                  <p className="text-gray-800">{transcript}</p>
+                </div>
+              )}
+
+              {!isSpeaking && !isListeningRef.current && isManualMode && (
+                <button
+                  onClick={() => startListening()}
+                  className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 shadow-lg"
+                >
+                  🎤 Parler à François
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsManualMode(!isManualMode)}
+                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+              >
+                {isManualMode ? '🔄 Mode automatique' : '👆 Mode manuel'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {allCorrections.length > 0 && (
+          <div className="mt-6 bg-white border rounded-lg p-4">
+            <h3 className="text-sm font-bold text-gray-800 mb-3">
+              📝 Corrections ({allCorrections.length})
+            </h3>
+            <div className="space-y-3">
+              {allCorrections.map((correction, index) => (
+                <div key={index} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
+                  <div className="text-sm text-gray-500 line-through">{correction.originalSentence}</div>
+                  <div className="text-sm font-semibold text-gray-800">→ {correction.correctedSentence}</div>
+                  <p className="text-xs text-gray-600 italic mt-1">💡 {correction.explanation}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
 
-      {/* TOOLBOX */}
-      <div className="border-t bg-white p-4">
+      <div className="p-4 bg-white border-t">
         <button
           onClick={() => setShowToolbox(!showToolbox)}
-          className="w-full flex items-center justify-between hover:bg-gray-50 p-2 rounded transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 bg-brand-green hover:bg-green-700 text-white rounded-lg"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-xl">🛠️</span>
-            <span className="font-semibold text-gray-800">Boîte à Outils</span>
-            {corrections.length > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {corrections.length}
-              </span>
-            )}
+            <span className="font-semibold">Ma Boîte à Outils</span>
           </div>
-          <svg 
-            className={`w-5 h-5 transition-transform ${showToolbox ? 'rotate-180' : ''}`} 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
+          <svg className={`w-5 h-5 transition-transform ${showToolbox ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
