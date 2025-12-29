@@ -5,7 +5,7 @@
 import { CourseWeekOral } from './typesOral';
 import { getWeekThemes } from './services/geminiService';
 
-export const GEMINI_MODEL_LIVE = 'gemini-1.5-flash-latest';
+export const GEMINI_MODEL_LIVE = 'gemini-1.5-flash';
 
 // Mapper les semaines LinguaCompagnon vers le format LiveTutor
 export function getOralWeekConfig(weekNumber: number): CourseWeekOral {
