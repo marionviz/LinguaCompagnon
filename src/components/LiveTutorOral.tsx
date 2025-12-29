@@ -78,7 +78,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const ai = new GoogleGenerativeAI(apiKey);
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
+        model: 'GEMINI_MODEL_LIVE',
         systemInstruction: week.systemPrompt
       });
 
@@ -140,7 +140,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         }
 
         // Ignorer si trop court ou faible confiance
-        if (userText.length < 3 || confidence < 0.5) {
+        if (userText.length < 3 || confidence < 0.4) {
           console.log('⚠️ Transcription ignorée (trop courte ou confiance faible)');
           isListeningRef.current = false;
           if (!isManualMode) {
@@ -228,14 +228,21 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       // Relancer l'écoute
       if (!isManualMode) {
-        console.log('⏳ Attente 1.5s avant relance écoute...');
-        setTimeout(() => {
-          if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
-            console.log('🔄 Relance automatique écoute');
-            startListening();
-          }
-        }, 1500);
-      }
+  console.log('⏳ Attente 3s avant relance écoute...');
+  console.log('   - isSpeaking:', isSpeaking);
+  console.log('   - connectionState:', connectionState);
+  
+  setTimeout(() => {
+    console.log('⏰ Timeout terminé');
+    console.log('   - isSpeaking:', isSpeaking);
+    if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
+      console.log('✅ Relance écoute');
+      startListening();
+    } else {
+      console.log('❌ Pas de relance - conditions non remplies');
+    }
+  }, 3000);
+}
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
@@ -428,6 +435,8 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       setErrorMsg(null);
       setAllCorrections([]);
       setConversationHistory([]);
+      setIsManualMode(false); // ✅ FORCER mode automatique
+      console.log('🎬 Mode automatique activé');
 
       // Vérifier micro
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -443,7 +452,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       if (!isManualMode) {
         setTimeout(() => {
           startListening();
-        }, 500);
+        }, 2000);
       }
 
     } catch (err: any) {
