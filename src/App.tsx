@@ -97,7 +97,7 @@ function App() {
           console.log('🧠 Création du modèle...');
           
           const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash-preview-tts',
+            model: 'gemini-1.5-flash',
             
             systemInstruction: systemPrompt,
             generationConfig: {
@@ -146,7 +146,7 @@ function App() {
       const systemPrompt = getSystemPrompt(week);
       
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash-preview-tts',
+        model: 'gemini-1.5-flash',
         systemInstruction: systemPrompt,
         generationConfig: {
           temperature: 1.2,
