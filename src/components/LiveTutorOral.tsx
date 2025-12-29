@@ -128,7 +128,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       
       // ✅ AVEC FUNCTION CALLING pour corrections
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
+        model: 'gemini-1.5-pro',
         systemInstruction: week.systemPrompt,
         tools: [{ functionDeclarations: [correctionTool] }],
       });
