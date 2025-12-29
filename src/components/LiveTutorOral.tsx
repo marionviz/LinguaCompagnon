@@ -1,10 +1,12 @@
 // src/components/LiveTutorOral.tsx
-// VERSION GEMINI 2.5 FLASH TTS (Décembre 2025)
-// ✅ Voix française native intégrée
-// ✅ Intelligence + Synthèse vocale en un appel
+// VERSION FINALE : Chirp 3 HD + gemini-1.5-flash
+// ✅ Voix française HD professionnelle
+// ✅ Parser corrections fonctionnel
+// ✅ Solution pérenne pour phase pilote
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import { ConnectionState, Correction } from '../typesOral';
 import { getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
@@ -34,7 +36,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   // Refs
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const geminiClientRef = useRef<any>(null);
+  const geminiChatRef = useRef<any>(null);
   const isListeningRef = useRef(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef<string>('');
@@ -77,10 +79,33 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       const apiKey = import.meta.env.VITE_API_KEY;
       if (!apiKey) throw new Error("VITE_API_KEY manquante");
 
-      const ai = new GoogleGenAI({ apiKey });
-      geminiClientRef.current = ai;
+      const ai = new GoogleGenerativeAI(apiKey);
       
-      console.log('✅ Gemini 2.5 Flash TTS initialisé');
+      // Prompt enrichi pour corrections
+      const enrichedPrompt = `${week.systemPrompt}
+
+IMPORTANT : Quand l'apprenant fait une erreur, signale-la dans ce format EXACT :
+
+[CORRECTION]
+Erreur : [phrase erronée exacte]
+Correct : [phrase corrigée]
+Type : [grammar/conjugation/vocabulary/pronunciation]
+Explication : [explication brève, max 15 mots]
+[/CORRECTION]
+
+Après avoir signalé l'erreur, continue la conversation normalement et encourage l'apprenant.`;
+
+      const model = ai.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: enrichedPrompt
+      });
+
+      const chat = model.startChat({
+        history: [],
+      });
+
+      geminiChatRef.current = chat;
+      console.log('✅ Gemini 1.5 Flash initialisé');
     } catch (err) {
       console.error('❌ Erreur initialisation Gemini:', err);
       setErrorMsg('Erreur initialisation IA');
@@ -207,67 +232,25 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   };
 
   // ═══════════════════════════════════════════════════════════
-  // GEMINI 2.5 FLASH TTS - APPEL UNIQUE
+  // GEMINI CHAT
   // ═══════════════════════════════════════════════════════════
 
   const sendToGemini = async (userText: string) => {
     try {
-      if (!geminiClientRef.current) {
+      if (!geminiChatRef.current) {
         throw new Error('Gemini non initialisé');
       }
 
-      console.log('🔄 Envoi à Gemini 2.5 Flash TTS...');
+      console.log('🔄 Envoi à Gemini...');
 
-      // Construire le prompt avec historique
+      // Construire contexte avec historique
       const history = conversationHistoryRef.current.slice(-6).join('\n');
-      const fullPrompt = `${week.systemPrompt}
+      const contextPrompt = history ? `Historique récent:\n${history}\n\nApprenant: "${userText}"` : userText;
 
-IMPORTANT : Quand l'apprenant fait une erreur, signale-la dans ce format EXACT :
-
-[CORRECTION]
-Erreur : [phrase erronée]
-Correct : [phrase corrigée]
-Type : [grammar/conjugation/vocabulary/pronunciation]
-Explication : [explication brève, max 15 mots]
-[/CORRECTION]
-
-Historique récent :
-${history}
-
-Apprenant vient de dire : "${userText}"
-
-Réponds naturellement et corrige si nécessaire.`;
-
-      // ✅ APPEL GEMINI 2.5 FLASH TTS
-      const response = await geminiClientRef.current.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ 
-          parts: [{ text: fullPrompt }] 
-        }],
-        config: {
-          responseModalities: ['AUDIO'],  // ✅ Audio direct
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: 'Kore'  // ✅ Voix masculine française
-              }
-            }
-          }
-        }
-      });
-
-      // Extraire le texte ET l'audio
-      const candidate = response.candidates[0];
+      const result = await geminiChatRef.current.sendMessage(contextPrompt);
+      const responseText = result.response.text();
       
-      // Texte de la réponse (pour parser corrections)
-      let responseText = '';
-      for (const part of candidate.content.parts) {
-        if (part.text) {
-          responseText += part.text;
-        }
-      }
-      
-      console.log('✅ Réponse texte:', responseText);
+      console.log('✅ Réponse Gemini:', responseText);
 
       // Ajouter à l'historique
       const cleanResponse = responseText.replace(/\[CORRECTION\][\s\S]*?\[\/CORRECTION\]/g, '').trim();
@@ -282,17 +265,8 @@ Réponds naturellement et corrige si nécessaire.`;
         saveCorrectionsToToolBox(corrections);
       }
 
-      // Extraire l'audio
-      const audioData = candidate.content.parts.find((p: any) => p.inlineData)?.inlineData?.data;
-      
-      if (audioData) {
-        console.log('🔊 Audio reçu, lecture...');
-        await playAudioPCM(audioData);
-        console.log('✅ Audio joué');
-      } else {
-        console.warn('⚠️ Pas d\'audio, fallback TTS navigateur');
-        await speakWithBrowserTTS(cleanResponse);
-      }
+      // Synthèse vocale avec Chirp 3 HD
+      await speakWithChirp3HD(cleanResponse);
 
       // Relancer l'écoute
       console.log('⏳ Attente 3s avant relance...');
@@ -316,62 +290,53 @@ Réponds naturellement et corrige si nécessaire.`;
   };
 
   // ═══════════════════════════════════════════════════════════
-  // LECTURE AUDIO PCM (Gemini 2.5 Flash TTS)
+  // CHIRP 3 HD TEXT-TO-SPEECH
   // ═══════════════════════════════════════════════════════════
 
-  const playAudioPCM = async (base64Audio: string) => {
+  const speakWithChirp3HD = async (text: string) => {
     try {
       setIsSpeaking(true);
+      console.log('🔊 Synthèse Chirp 3 HD...');
 
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const audioContext = audioContextRef.current;
+      const apiKey = import.meta.env.VITE_API_KEY;
       
-      // Decode base64
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      // ✅ APPEL CHIRP 3 HD via REST API
+      const response = await fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: { text },
+            voice: {
+              languageCode: 'fr-FR',
+              name: 'fr-FR-Chirp3-HD-Charon'  // ✅ Voix masculine française HD
+            },
+            audioConfig: {
+              audioEncoding: 'MP3',
+              speakingRate: 1.0  // Vitesse normale
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Chirp 3 HD error: ${response.status}`);
       }
 
-      // Gemini renvoie du PCM 16-bit, 24kHz, mono
-      const pcm16 = new Int16Array(bytes.buffer);
-      const float32 = new Float32Array(pcm16.length);
-      
-      // Convertir PCM16 en Float32 pour AudioBuffer
-      for (let i = 0; i < pcm16.length; i++) {
-        float32[i] = pcm16[i] / 32768.0;
-      }
+      const data = await response.json();
+      await playAudioBase64(data.audioContent);
 
-      // Créer AudioBuffer
-      const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-      audioBuffer.getChannelData(0).set(float32);
-
-      // Jouer
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-
-      return new Promise<void>((resolve) => {
-        source.onended = () => {
-          setIsSpeaking(false);
-          resolve();
-        };
-        source.start(0);
-      });
-
-    } catch (err) {
-      console.error('❌ Erreur lecture PCM:', err);
+      console.log('✅ Audio Chirp 3 HD joué');
       setIsSpeaking(false);
-      throw err;
+
+    } catch (err: any) {
+      console.error('❌ Erreur Chirp 3 HD:', err);
+      setIsSpeaking(false);
+      // Fallback vers TTS navigateur
+      await speakWithBrowserTTS(text);
     }
   };
-
-  // ═══════════════════════════════════════════════════════════
-  // FALLBACK TTS NAVIGATEUR
-  // ═══════════════════════════════════════════════════════════
 
   const speakWithBrowserTTS = async (text: string) => {
     return new Promise<void>((resolve) => {
@@ -391,6 +356,36 @@ Réponds naturellement et corrige si nécessaire.`;
 
       speechSynthesis.speak(utterance);
     });
+  };
+
+  const playAudioBase64 = async (base64Audio: string) => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      const audioContext = audioContextRef.current;
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+
+      return new Promise<void>((resolve) => {
+        source.onended = () => resolve();
+        source.start(0);
+      });
+
+    } catch (err) {
+      console.error('❌ Erreur lecture audio:', err);
+      throw err;
+    }
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -438,26 +433,9 @@ Réponds naturellement et corrige si nécessaire.`;
       console.log('✅ Session démarrée');
       setConnectionState(ConnectionState.CONNECTED);
 
-      // Message d'accueil court avec Gemini TTS
-      const greetingPrompt = `Tu es François, tuteur de français. Dis simplement : "Bonjour ! Aujourd'hui, semaine ${weekNumber}. Commençons !"`;
-      
-      const response = await geminiClientRef.current.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: greetingPrompt }] }],
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' }
-            }
-          }
-        }
-      });
-
-      const audioData = response.candidates[0].content.parts.find((p: any) => p.inlineData)?.inlineData?.data;
-      if (audioData) {
-        await playAudioPCM(audioData);
-      }
+      // Message d'accueil avec Chirp 3 HD
+      const greeting = `Bonjour ! Aujourd'hui, semaine ${weekNumber}. Commençons !`;
+      await speakWithChirp3HD(greeting);
 
       setTimeout(() => {
         console.log('✅ Première écoute');
@@ -536,7 +514,7 @@ Cordialement`);
   };
 
   // ═══════════════════════════════════════════════════════════
-  // RENDU UI (identique à la version précédente)
+  // RENDU UI
   // ═══════════════════════════════════════════════════════════
 
   if (showDurationSelector) {
@@ -554,6 +532,7 @@ Cordialement`);
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
           <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
+          <p className="text-gray-600 mb-8">Avec voix Chirp 3 HD qualité professionnelle</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
