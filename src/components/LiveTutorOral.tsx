@@ -140,7 +140,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         }
 
         // Ignorer si trop court ou faible confiance
-        if (userText.length < 3 || confidence < 0.4) {
+        if (userText.length < 3) {
           console.log('⚠️ Transcription ignorée (trop courte ou confiance faible)');
           isListeningRef.current = false;
           if (!isManualMode) {
