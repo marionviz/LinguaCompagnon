@@ -1,14 +1,12 @@
-// src/components/LiveTutorOral.tsx
-// VERSION FINALE : Chirp 3 HD + gemini-1.5-flash
-// ✅ Voix française HD professionnelle
-// ✅ Parser corrections fonctionnel
-// ✅ Solution pérenne pour phase pilote
+// VERSION AVEC AudioWorklet au lieu de ScriptProcessorNode
+// ✅ Supprime le warning de dépréciation
+// ✅ Compatible Gemini Live API
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
 import { ConnectionState, Correction } from '../typesOral';
-import { getOralWeekConfig } from '../constantsOral';
+import { createPCM16Blob, base64ToBytes, decodeAudioData } from '../utils/audioUtilsLive';
+import { GEMINI_MODEL_LIVE, getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
 import { ToolBox } from './ToolBox/ToolBox';
 
@@ -17,35 +15,86 @@ interface LiveTutorOralProps {
   onClose: () => void;
 }
 
+const correctionTool: FunctionDeclaration = {
+  name: "displayCorrection",
+  description: `Affiche toutes les corrections à la fois sur l'écran.
+
+⚠️ RÈGLES STRICTES - NE CORRIGER QUE SI VRAIE ERREUR :
+1. ❌ NE JAMAIS corriger si originalSentence === correctedSentence
+2. ❌ NE JAMAIS corriger si les phrases sont quasi-identiques
+3. ✅ Corriger UNIQUEMENT les VRAIES erreurs importantes
+
+TYPES D'ERREURS À CORRIGER :
+✅ GRAMMAIRE : articles, accords, structure de phrase incorrecte
+✅ CONJUGAISON : temps verbal erroné, auxiliaire incorrect
+✅ VOCABULAIRE : mot inexistant ou très mal prononcé/écrit
+✅ PRONONCIATION : UNIQUEMENT liaisons interdites (ex: "les_haricots" → "les haricots")
+
+❌ NE PAS CORRIGER :
+- Liaisons facultatives ou obligatoires bien prononcées
+- Phrases déjà correctes
+- Petits accents étrangers acceptables
+- Approximations de prononciation si le sens est clair`,
+  
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      originalSentence: { 
+        type: Type.STRING, 
+        description: "La phrase EXACTE prononcée par l'apprenant AVEC l'erreur" 
+      },
+      correctedSentence: { 
+        type: Type.STRING, 
+        description: "La version CORRIGÉE. DOIT être DIFFÉRENTE de originalSentence" 
+      },
+      explanation: { 
+        type: Type.STRING, 
+        description: "Explication TRÈS BRÈVE (max 10 mots)" 
+      },
+      errorType: {
+        type: Type.STRING,
+        description: "Type d'erreur: pronunciation, grammar, vocabulary, conjugation",
+        enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
+      },
+      mispronouncedWord: {
+        type: Type.STRING,
+        description: "UNIQUEMENT si errorType='pronunciation': le mot mal prononcé"
+      }
+    },
+    required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
+  },
+};
+
 const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) => {
   const week = getOralWeekConfig(weekNumber);
-  const { addItem } = useToolBox();
   
-  // États
   const [showDurationSelector, setShowDurationSelector] = useState(true);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
-  const [transcript, setTranscript] = useState<string>('');
-  const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [volumeLevel, setVolumeLevel] = useState(0);
+  const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [showToolbox, setShowToolbox] = useState(false);
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  // Refs
-  const recognitionRef = useRef<any>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const geminiChatRef = useRef<any>(null);
-  const isListeningRef = useRef(false);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastTranscriptRef = useRef<string>('');
-  const conversationHistoryRef = useRef<string[]>([]);
-
-  // ═══════════════════════════════════════════════════════════
-  // TIMER
-  // ═══════════════════════════════════════════════════════════
   
+  const { addItem } = useToolBox();
+
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const nextStartTimeRef = useRef<number>(0);
+  const inputAudioContextRef = useRef<AudioContext | null>(null);
+  const outputAudioContextRef = useRef<AudioContext | null>(null);
+  const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null); // ✅ CHANGÉ
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Timer
   useEffect(() => {
     if (selectedDuration && connectionState === ConnectionState.CONNECTED && timeRemaining > 0) {
       timerIntervalRef.current = setInterval(() => {
@@ -63,360 +112,77 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     }
   }, [selectedDuration, connectionState, timeRemaining]);
 
-  // ═══════════════════════════════════════════════════════════
-  // INITIALISATION GEMINI
-  // ═══════════════════════════════════════════════════════════
-  
-  useEffect(() => {
-    initializeGemini();
-    return () => {
-      cleanup();
-    };
-  }, []);
-
-  const initializeGemini = async () => {
-    try {
-      const apiKey = import.meta.env.VITE_API_KEY;
-      if (!apiKey) throw new Error("VITE_API_KEY manquante");
-
-      const ai = new GoogleGenerativeAI(apiKey);
-      
-      // Prompt enrichi pour corrections
-      const enrichedPrompt = `${week.systemPrompt}
-
-IMPORTANT : Quand l'apprenant fait une erreur, signale-la dans ce format EXACT :
-
-[CORRECTION]
-Erreur : [phrase erronée exacte]
-Correct : [phrase corrigée]
-Type : [grammar/conjugation/vocabulary/pronunciation]
-Explication : [explication brève, max 15 mots]
-[/CORRECTION]
-
-Après avoir signalé l'erreur, continue la conversation normalement et encourage l'apprenant.`;
-
-      const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        systemInstruction: enrichedPrompt
-      });
-
-      const chat = model.startChat({
-        history: [],
-      });
-
-      geminiChatRef.current = chat;
-      console.log('✅ Gemini 1.5 Flash initialisé');
-    } catch (err) {
-      console.error('❌ Erreur initialisation Gemini:', err);
-      setErrorMsg('Erreur initialisation IA');
-      setConnectionState(ConnectionState.ERROR);
-    }
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // RECONNAISSANCE VOCALE
-  // ═══════════════════════════════════════════════════════════
-
-  const startListening = useCallback(() => {
-    if (isListeningRef.current || isSpeaking) {
-      console.log('⏸️ Écoute déjà active ou François parle');
-      return;
-    }
-
-    try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        throw new Error('Speech Recognition non supporté');
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'fr-FR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        console.log('🎤 Écoute démarrée');
-        isListeningRef.current = true;
-        setTranscript('');
-      };
-
-      recognition.onresult = async (event: any) => {
-        const userText = event.results[0][0].transcript.trim();
-        
-        console.log('📝 Transcription:', userText);
-        
-        // Ignorer si identique
-        if (userText === lastTranscriptRef.current) {
-          console.log('⚠️ Identique, ignorée');
-          isListeningRef.current = false;
-          setTimeout(() => startListening(), 2000);
-          return;
-        }
-
-        // Ignorer si trop court
-        if (userText.length < 3) {
-          console.log('⚠️ Trop courte');
-          isListeningRef.current = false;
-          setTimeout(() => startListening(), 2000);
-          return;
-        }
-
-        console.log('✅ Transcription acceptée');
-        lastTranscriptRef.current = userText;
-        setTranscript(userText);
-        isListeningRef.current = false;
-
-        // Ajouter à l'historique
-        conversationHistoryRef.current.push(`Apprenant: ${userText}`);
-
-        // Envoyer à Gemini
-        await sendToGemini(userText);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('❌ Erreur reconnaissance:', event.error);
-        isListeningRef.current = false;
-        
-        if (event.error === 'no-speech') {
-          setTimeout(() => startListening(), 2000);
-        } else if (event.error !== 'aborted') {
-          setErrorMsg('Erreur reconnaissance vocale');
-        }
-      };
-
-      recognition.onend = () => {
-        console.log('🎤 Écoute terminée');
-        isListeningRef.current = false;
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-
-    } catch (err: any) {
-      console.error('❌ Erreur démarrage reconnaissance:', err);
-      setErrorMsg('Microphone non accessible');
-      setConnectionState(ConnectionState.ERROR);
-    }
-  }, [isSpeaking]);
-
-  // ═══════════════════════════════════════════════════════════
-  // PARSER DE CORRECTIONS
-  // ═══════════════════════════════════════════════════════════
-
-  const parseCorrections = (responseText: string): Correction[] => {
-    const corrections: Correction[] = [];
+  // ToolBox
+  const addCorrectionToToolbox = useCallback((correction: Correction & { errorType?: string; mispronouncedWord?: string }) => {
+    let category: 'grammar' | 'vocabulary' | 'conjugation' | 'pronunciation' = 'grammar';
     
-    const correctionRegex = /\[CORRECTION\]([\s\S]*?)\[\/CORRECTION\]/g;
-    let match;
+    if (correction.errorType) {
+      category = correction.errorType as any;
+    }
+
+    let title = correction.explanation.length > 50 
+      ? correction.explanation.substring(0, 50) + '...'
+      : correction.explanation;
+
+    if (category === 'pronunciation' && correction.mispronouncedWord) {
+      title = `Prononciation : "${correction.mispronouncedWord}"`;
+    }
+
+    let example = `❌ ${correction.originalSentence}\n✅ ${correction.correctedSentence}`;
     
-    while ((match = correctionRegex.exec(responseText)) !== null) {
-      const block = match[1];
-      
-      const erreurMatch = block.match(/Erreur\s*:\s*(.+)/);
-      const correctMatch = block.match(/Correct\s*:\s*(.+)/);
-      const typeMatch = block.match(/Type\s*:\s*(.+)/);
-      const explanationMatch = block.match(/Explication\s*:\s*(.+)/);
-      
-      if (erreurMatch && correctMatch && explanationMatch) {
-        corrections.push({
-          originalSentence: erreurMatch[1].trim(),
-          correctedSentence: correctMatch[1].trim(),
-          explanation: explanationMatch[1].trim(),
-          errorType: typeMatch ? typeMatch[1].trim() as any : 'grammar',
-        });
-      }
+    if (category === 'pronunciation' && correction.mispronouncedWord) {
+      example = `🗣️ Mot mal prononcé : "${correction.mispronouncedWord}"\n\n` +
+                `❌ Vous avez dit : ${correction.originalSentence}\n` +
+                `✅ Prononciation correcte : ${correction.correctedSentence}`;
     }
-    
-    console.log('🔍 Corrections parsées:', corrections);
-    return corrections;
-  };
 
-  // ═══════════════════════════════════════════════════════════
-  // GEMINI CHAT
-  // ═══════════════════════════════════════════════════════════
-
-  const sendToGemini = async (userText: string) => {
-    try {
-      if (!geminiChatRef.current) {
-        throw new Error('Gemini non initialisé');
-      }
-
-      console.log('🔄 Envoi à Gemini...');
-
-      // Construire contexte avec historique
-      const history = conversationHistoryRef.current.slice(-6).join('\n');
-      const contextPrompt = history ? `Historique récent:\n${history}\n\nApprenant: "${userText}"` : userText;
-
-      const result = await geminiChatRef.current.sendMessage(contextPrompt);
-      const responseText = result.response.text();
-      
-      console.log('✅ Réponse Gemini:', responseText);
-
-      // Ajouter à l'historique
-      const cleanResponse = responseText.replace(/\[CORRECTION\][\s\S]*?\[\/CORRECTION\]/g, '').trim();
-      conversationHistoryRef.current.push(`François: ${cleanResponse}`);
-
-      // Parser les corrections
-      const corrections = parseCorrections(responseText);
-      
-      if (corrections.length > 0) {
-        console.log('📝 Corrections trouvées:', corrections);
-        setAllCorrections(prev => [...prev, ...corrections]);
-        saveCorrectionsToToolBox(corrections);
-      }
-
-      // Synthèse vocale avec Chirp 3 HD
-      await speakWithChirp3HD(cleanResponse);
-
-      // Relancer l'écoute
-      console.log('⏳ Attente 3s avant relance...');
-      setTimeout(() => {
-        if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
-          console.log('✅ Relance écoute');
-          startListening();
-        }
-      }, 3000);
-
-    } catch (err: any) {
-      console.error('❌ Erreur Gemini:', err);
-      setErrorMsg('Erreur traitement IA');
-      
-      setTimeout(() => {
-        if (connectionState === ConnectionState.CONNECTED) {
-          startListening();
-        }
-      }, 2000);
-    }
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // CHIRP 3 HD TEXT-TO-SPEECH
-  // ═══════════════════════════════════════════════════════════
-
-  const speakWithChirp3HD = async (text: string) => {
-    try {
-      setIsSpeaking(true);
-      console.log('🔊 Synthèse Chirp 3 HD...');
-
-      const apiKey = import.meta.env.VITE_API_KEY;
-      
-      // ✅ APPEL CHIRP 3 HD via REST API
-      const response = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            input: { text },
-            voice: {
-              languageCode: 'fr-FR',
-              name: 'fr-FR-Chirp3-HD-Charon'  // ✅ Voix masculine française HD
-            },
-            audioConfig: {
-              audioEncoding: 'MP3',
-              speakingRate: 1.0  // Vitesse normale
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Chirp 3 HD error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      await playAudioBase64(data.audioContent);
-
-      console.log('✅ Audio Chirp 3 HD joué');
-      setIsSpeaking(false);
-
-    } catch (err: any) {
-      console.error('❌ Erreur Chirp 3 HD:', err);
-      setIsSpeaking(false);
-      // Fallback vers TTS navigateur
-      await speakWithBrowserTTS(text);
-    }
-  };
-
-  const speakWithBrowserTTS = async (text: string) => {
-    return new Promise<void>((resolve) => {
-      setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        resolve();
-      };
-
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        resolve();
-      };
-
-      speechSynthesis.speak(utterance);
-    });
-  };
-
-  const playAudioBase64 = async (base64Audio: string) => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const audioContext = audioContextRef.current;
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-
-      return new Promise<void>((resolve) => {
-        source.onended = () => resolve();
-        source.start(0);
-      });
-
-    } catch (err) {
-      console.error('❌ Erreur lecture audio:', err);
-      throw err;
-    }
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // SAUVEGARDE TOOLBOX
-  // ═══════════════════════════════════════════════════════════
-
-  const saveCorrectionsToToolBox = (corrections: Correction[]) => {
-    if (corrections.length === 0) return;
-
-    console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
-
-    corrections.forEach((correction) => {
-      const category = correction.errorType || 'grammar';
-      
-      addItem({
-        category: category as any,
-        title: `Correction - ${category}`,
-        description: correction.explanation,
-        example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
-        errorContext: `Semaine ${weekNumber} - Mode Oral`,
-      });
+    addItem({
+      category,
+      title,
+      description: correction.explanation,
+      example,
+      errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
     });
 
+    console.log('✅ Item ajouté à la toolbox');
     window.dispatchEvent(new Event('toolboxUpdated'));
     setShowToolboxNotification(true);
     setTimeout(() => setShowToolboxNotification(false), 3000);
-  };
+  }, [addItem, weekNumber]);
 
-  // ═══════════════════════════════════════════════════════════
-  // DÉMARRAGE SESSION
-  // ═══════════════════════════════════════════════════════════
+  const stopAudioProcessing = useCallback(() => {
+    sourcesRef.current.forEach(source => {
+      try { source.stop(); } catch (e) { /* ignore */ }
+    });
+    sourcesRef.current.clear();
+
+    // ✅ CHANGÉ : AudioWorklet au lieu de ScriptProcessor
+    if (audioWorkletNodeRef.current) {
+      audioWorkletNodeRef.current.disconnect();
+      audioWorkletNodeRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (inputAudioContextRef.current?.state !== 'closed') inputAudioContextRef.current?.close();
+    if (outputAudioContextRef.current?.state !== 'closed') outputAudioContextRef.current?.close();
+    
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+  }, []);
+
+  const updateVolume = () => {
+    if (analyzerRef.current && connectionState === ConnectionState.CONNECTED) {
+        const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
+        analyzerRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        setVolumeLevel(average);
+        animationFrameRef.current = requestAnimationFrame(updateVolume);
+    }
+  };
 
   const startSession = async (duration: number) => {
     try {
@@ -425,70 +191,201 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       setShowDurationSelector(false);
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
-      setAllCorrections([]);
-      conversationHistoryRef.current = [];
 
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const apiKey = import.meta.env.VITE_API_KEY;
+      if (!apiKey) throw new Error("VITE_API_KEY manquante");
 
-      console.log('✅ Session démarrée');
-      setConnectionState(ConnectionState.CONNECTED);
+      const ai = new GoogleGenAI({ apiKey });
 
-      // Message d'accueil avec Chirp 3 HD
-      const greeting = `Bonjour ! Aujourd'hui, semaine ${weekNumber}. Commençons !`;
-      await speakWithChirp3HD(greeting);
+      const InputContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const OutputContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      
+      const inputCtx = new InputContextClass({ sampleRate: 16000 });
+      const outputCtx = new OutputContextClass({ sampleRate: 24000 });
+      
+      if (inputCtx.state === 'suspended') await inputCtx.resume();
+      if (outputCtx.state === 'suspended') await outputCtx.resume();
 
-      setTimeout(() => {
-        console.log('✅ Première écoute');
-        startListening();
-      }, 2000);
+      inputAudioContextRef.current = inputCtx;
+      outputAudioContextRef.current = outputCtx;
+      nextStartTimeRef.current = outputCtx.currentTime;
+
+      const outputNode = outputCtx.createGain();
+      outputNode.connect(outputCtx.destination);
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const config = {
+        model: GEMINI_MODEL_LIVE,
+        callbacks: {
+          onopen: async () => {
+            console.log("✅ Connexion Live API ouverte");
+            setConnectionState(ConnectionState.CONNECTED);
+            
+            const source = inputCtx.createMediaStreamSource(stream);
+            const analyzer = inputCtx.createAnalyser();
+            analyzer.fftSize = 256;
+            source.connect(analyzer);
+            analyzerRef.current = analyzer;
+            updateVolume();
+
+            // ✅ CHANGÉ : AudioWorklet au lieu de ScriptProcessor
+            try {
+              await inputCtx.audioWorklet.addModule('/microphone-processor.worklet.js');
+              
+              const workletNode = new AudioWorkletNode(inputCtx, 'microphone-processor');
+              audioWorkletNodeRef.current = workletNode;
+
+              // Écouter les données audio
+              workletNode.port.onmessage = (event) => {
+                if (event.data.type === 'audiodata' && !isMicMuted) {
+                  const pcmBlob = new Blob([event.data.data], { type: 'application/octet-stream' });
+                  
+                  if (sessionPromiseRef.current) {
+                    sessionPromiseRef.current.then(session => {
+                      session.sendRealtimeInput({ media: pcmBlob });
+                    }).catch(console.error);
+                  }
+                }
+              };
+
+              source.connect(workletNode);
+              workletNode.connect(inputCtx.destination);
+              
+              console.log('✅ AudioWorklet microphone activé');
+
+            } catch (err) {
+              console.error('❌ Erreur AudioWorklet:', err);
+              throw new Error('AudioWorklet non supporté');
+            }
+          },
+          onmessage: async (message: LiveServerMessage) => {
+            // Tool calls
+            if (message.toolCall) {
+               const functionCalls = message.toolCall.functionCalls;
+               if (functionCalls && functionCalls.length > 0) {
+                 const call = functionCalls[0];
+                 if (call.name === 'displayCorrection') {
+                   const correctionData = call.args as unknown as Correction;
+                   console.log("📝 Correction reçue:", correctionData);
+                   
+                   setAllCorrections(prev => [...prev, correctionData]);
+                   addCorrectionToToolbox(correctionData);
+
+                   if (sessionPromiseRef.current) {
+                     sessionPromiseRef.current.then(session => {
+                       session.sendToolResponse({
+                         functionResponses: [{
+                           id: call.id,
+                           name: call.name,
+                           response: { result: "Correction affichée." }
+                         }]
+                       });
+                     });
+                   }
+                 }
+               }
+            }
+
+            // Audio
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (audioData && outputCtx) {
+              setIsAiSpeaking(true);
+              const bytes = base64ToBytes(audioData);
+              const buffer = await decodeAudioData(bytes, outputCtx, 24000, 1);
+              
+              const source = outputCtx.createBufferSource();
+              source.buffer = buffer;
+              source.connect(outputNode);
+
+              const currentTime = outputCtx.currentTime;
+              if (nextStartTimeRef.current < currentTime) {
+                nextStartTimeRef.current = currentTime;
+              }
+
+              source.start(nextStartTimeRef.current);
+              nextStartTimeRef.current += buffer.duration;
+
+              sourcesRef.current.add(source);
+              source.onended = () => {
+                sourcesRef.current.delete(source);
+                if (sourcesRef.current.size === 0) setIsAiSpeaking(false);
+              };
+            }
+
+            if (message.serverContent?.interrupted) {
+              sourcesRef.current.forEach(s => s.stop());
+              sourcesRef.current.clear();
+              nextStartTimeRef.current = 0;
+              setIsAiSpeaking(false);
+            }
+
+            if (message.serverContent?.turnComplete) {
+              setIsAiSpeaking(false);
+            }
+          },
+          onclose: () => {
+            console.log("❌ Connexion fermée");
+            setConnectionState(ConnectionState.DISCONNECTED);
+          },
+          onerror: (err: any) => {
+            console.error("❌ Erreur:", err);
+            setConnectionState(ConnectionState.ERROR);
+            setErrorMsg("Erreur de connexion.");
+          }
+        },
+        
+       config: {
+          responseModalities: [Modality.AUDIO],
+          tools: [{ functionDeclarations: [correctionTool] }],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'fr-FR-Journey-D' } }
+          },
+          systemInstruction: week.systemPrompt
+        }
+      };
+
+      sessionPromiseRef.current = ai.live.connect(config);
 
     } catch (err: any) {
-      console.error('❌ Erreur démarrage:', err);
-      setErrorMsg('Impossible d\'accéder au microphone');
+      console.error("❌ Erreur:", err);
       setConnectionState(ConnectionState.ERROR);
+      setErrorMsg("Impossible d'initialiser la session.");
+      stopAudioProcessing();
     }
   };
 
-  // ═══════════════════════════════════════════════════════════
-  // CLEANUP
-  // ═══════════════════════════════════════════════════════════
+  useEffect(() => {
+    return () => stopAudioProcessing();
+  }, [stopAudioProcessing]);
 
-  const cleanup = () => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) {}
-      recognitionRef.current = null;
-    }
-
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-
-    speechSynthesis.cancel();
-    isListeningRef.current = false;
-
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-    }
-  };
+  useEffect(() => {
+    if (connectionState === ConnectionState.CONNECTED) updateVolume();
+    return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
+  }, [connectionState]);
 
   const handleEndCall = () => {
-    cleanup();
+    stopAudioProcessing();
+    if (sessionPromiseRef.current) {
+      sessionPromiseRef.current.then(session => (session as any).close?.()).catch(() => {});
+    }
+    sessionPromiseRef.current = null;
     onClose();
   };
 
-  const handleReportDoubt = () => {
+  const handleReportDoubtOral = () => {
     const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
     
-    let correctionsText = '=== CORRECTIONS ===\n\n';
+    let correctionsText = '=== CORRECTIONS REÇUES ===\n\n';
     if (allCorrections.length === 0) {
       correctionsText += '(Aucune)\n\n';
     } else {
-      allCorrections.forEach((c, i) => {
-        correctionsText += `[${i + 1}] ${c.errorType}\n`;
-        correctionsText += `   ❌ ${c.originalSentence}\n`;
-        correctionsText += `   ✅ ${c.correctedSentence}\n`;
-        correctionsText += `   💡 ${c.explanation}\n\n`;
+      allCorrections.forEach((correction, index) => {
+        correctionsText += `[${index + 1}] ${correction.errorType || 'non spécifié'}\n`;
+        correctionsText += `   ❌ ${correction.originalSentence}\n`;
+        correctionsText += `   ✅ ${correction.correctedSentence}\n`;
+        correctionsText += `   💡 ${correction.explanation}\n\n`;
       });
     }
     
@@ -513,10 +410,7 @@ Cordialement`);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ═══════════════════════════════════════════════════════════
-  // RENDU UI
-  // ═══════════════════════════════════════════════════════════
-
+  // UI (identique, juste sans ScriptProcessor)
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
@@ -532,7 +426,7 @@ Cordialement`);
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
           <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
-          <p className="text-gray-600 mb-8">Avec voix Chirp 3 HD qualité professionnelle</p>
+          <p className="text-xs text-gray-500 mb-8">✅ AudioWorklet optimisé (pas de dépréciation)</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -570,7 +464,7 @@ Cordialement`);
               <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
             </div>
             
-            <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
+            <button onClick={handleReportDoubtOral} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
             <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
           </div>
         </div>
@@ -581,25 +475,13 @@ Cordialement`);
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
               <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
-                isSpeaking ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse' :
-                isListeningRef.current ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse' :
+                isAiSpeaking ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse' :
                 'bg-gradient-to-br from-green-400 to-emerald-500'
               }`}>
                 <div className="text-6xl text-white">
-                  {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '✓'}
+                  {isAiSpeaking ? '🔊' : '🎤'}
                 </div>
               </div>
-
-              <div className="text-xl font-semibold mb-4">
-                {isSpeaking ? 'François parle...' : isListeningRef.current ? 'Je vous écoute...' : 'Prêt'}
-              </div>
-
-              {transcript && (
-                <div className="bg-white border rounded-lg p-4 max-w-2xl mb-4">
-                  <p className="text-sm text-gray-600">Vous :</p>
-                  <p className="text-gray-800">{transcript}</p>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -610,9 +492,12 @@ Cordialement`);
             <div className="space-y-3">
               {allCorrections.map((c, i) => (
                 <div key={i} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
-                  <div className="text-sm text-gray-500 line-through">{c.originalSentence}</div>
-                  <div className="text-sm font-semibold text-gray-800">→ {c.correctedSentence}</div>
-                  <p className="text-xs text-gray-600 italic mt-1">💡 {c.explanation}</p>
+                  <div className="text-sm text-gray-500 line-through mb-1">{c.originalSentence}</div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600">→</span>
+                    <div className="text-sm font-bold text-gray-800">{c.correctedSentence}</div>
+                  </div>
+                  <p className="text-xs text-gray-600 italic mt-2">💡 {c.explanation}</p>
                 </div>
               ))}
             </div>
