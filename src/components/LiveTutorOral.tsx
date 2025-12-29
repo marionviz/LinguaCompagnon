@@ -473,10 +473,13 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               </div>
             )}
 
-            {!isSpeaking && !isListeningRef.current && (
-              <p className="text-sm text-gray-500">
-                François vous écoute automatiquement...
-              </p>
+            {connectionState === ConnectionState.CONNECTED && !isSpeaking && !isListeningRef.current && (
+            <button
+            onClick={() => startListening()}
+            className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors shadow-lg"
+            >
+            🎤 Parler à nouveau
+            </button>
             )}
           </div>
         )}
