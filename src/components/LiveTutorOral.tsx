@@ -48,7 +48,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const ai = new GoogleGenerativeAI(apiKey);
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
+        model: 'gemini-1.5-pro',
         systemInstruction: week.systemPrompt
       });
 
