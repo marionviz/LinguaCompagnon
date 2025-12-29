@@ -97,7 +97,7 @@ function App() {
           console.log('🧠 Création du modèle...');
           
           const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash-002',
+            model: 'gemini-live-2.5-flash-native-audio',
             
             systemInstruction: systemPrompt,
             generationConfig: {
