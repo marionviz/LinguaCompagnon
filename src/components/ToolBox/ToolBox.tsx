@@ -186,7 +186,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     }
   };
 
-  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation'];
+  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
   
   const categoryLabels: Record<CategoryType | 'all', string> = {
     all: 'Tout',
