@@ -1,6 +1,7 @@
-// VERSION AVEC AudioWorklet au lieu de ScriptProcessorNode
-// ✅ Supprime le warning de dépréciation
-// ✅ Compatible Gemini Live API
+// VERSION DEBUG ENHANCED avec logs détaillés + reconnexion
+// ✅ Logs complets pour debug
+// ✅ Keepalive automatique
+// ✅ Reconnexion si déconnexion
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
@@ -22,44 +23,20 @@ const correctionTool: FunctionDeclaration = {
 ⚠️ RÈGLES STRICTES - NE CORRIGER QUE SI VRAIE ERREUR :
 1. ❌ NE JAMAIS corriger si originalSentence === correctedSentence
 2. ❌ NE JAMAIS corriger si les phrases sont quasi-identiques
-3. ✅ Corriger UNIQUEMENT les VRAIES erreurs importantes
-
-TYPES D'ERREURS À CORRIGER :
-✅ GRAMMAIRE : articles, accords, structure de phrase incorrecte
-✅ CONJUGAISON : temps verbal erroné, auxiliaire incorrect
-✅ VOCABULAIRE : mot inexistant ou très mal prononcé/écrit
-✅ PRONONCIATION : UNIQUEMENT liaisons interdites (ex: "les_haricots" → "les haricots")
-
-❌ NE PAS CORRIGER :
-- Liaisons facultatives ou obligatoires bien prononcées
-- Phrases déjà correctes
-- Petits accents étrangers acceptables
-- Approximations de prononciation si le sens est clair`,
+3. ✅ Corriger UNIQUEMENT les VRAIES erreurs importantes`,
   
   parameters: {
     type: Type.OBJECT,
     properties: {
-      originalSentence: { 
-        type: Type.STRING, 
-        description: "La phrase EXACTE prononcée par l'apprenant AVEC l'erreur" 
-      },
-      correctedSentence: { 
-        type: Type.STRING, 
-        description: "La version CORRIGÉE. DOIT être DIFFÉRENTE de originalSentence" 
-      },
-      explanation: { 
-        type: Type.STRING, 
-        description: "Explication TRÈS BRÈVE (max 10 mots)" 
-      },
+      originalSentence: { type: Type.STRING, description: "Phrase avec erreur" },
+      correctedSentence: { type: Type.STRING, description: "Phrase corrigée" },
+      explanation: { type: Type.STRING, description: "Explication brève" },
       errorType: {
         type: Type.STRING,
-        description: "Type d'erreur: pronunciation, grammar, vocabulary, conjugation",
+        description: "Type: pronunciation, grammar, vocabulary, conjugation",
         enum: ["pronunciation", "grammar", "vocabulary", "conjugation"]
       },
-      mispronouncedWord: {
-        type: Type.STRING,
-        description: "UNIQUEMENT si errorType='pronunciation': le mot mal prononcé"
-      }
+      mispronouncedWord: { type: Type.STRING, description: "Mot mal prononcé (si pronunciation)" }
     },
     required: ["originalSentence", "correctedSentence", "explanation", "errorType"],
   },
@@ -80,19 +57,32 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [showToolbox, setShowToolbox] = useState(false);
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   
   const { addItem } = useToolBox();
 
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const sessionRef = useRef<any>(null);
   const nextStartTimeRef = useRef<number>(0);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null); // ✅ CHANGÉ
+  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const keepaliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioChunkCountRef = useRef<number>(0);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // ✅ FONCTION DE LOG
+  const addLog = useCallback((message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const log = `[${timestamp}] ${message}`;
+    console.log(log);
+    setDebugLogs(prev => [...prev.slice(-20), log]); // Garde 20 derniers logs
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -111,6 +101,42 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       };
     }
   }, [selectedDuration, connectionState, timeRemaining]);
+
+  // ✅ KEEPALIVE - Envoie ping toutes les 25 secondes
+  const startKeepalive = useCallback(() => {
+    addLog('🔄 Keepalive démarré');
+    
+    keepaliveIntervalRef.current = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+      
+      addLog(`💓 Keepalive ping (dernière activité: ${Math.floor(timeSinceLastActivity / 1000)}s)`);
+      
+      if (sessionRef.current) {
+        try {
+          // Envoyer un message vide pour garder la connexion
+          sessionRef.current.sendRealtimeInput({ 
+            media: new Blob([], { type: 'application/octet-stream' }) 
+          });
+          addLog('✅ Keepalive ping envoyé');
+        } catch (err) {
+          addLog(`❌ Erreur keepalive: ${err}`);
+        }
+      }
+      
+      // Si pas d'activité depuis 60s, avertir
+      if (timeSinceLastActivity > 60000) {
+        addLog('⚠️ Aucune activité depuis 60s - connexion possiblement morte');
+      }
+    }, 25000); // 25 secondes
+  }, [addLog]);
+
+  const stopKeepalive = useCallback(() => {
+    if (keepaliveIntervalRef.current) {
+      clearInterval(keepaliveIntervalRef.current);
+      keepaliveIntervalRef.current = null;
+      addLog('🛑 Keepalive arrêté');
+    }
+  }, [addLog]);
 
   // ToolBox
   const addCorrectionToToolbox = useCallback((correction: Correction & { errorType?: string; mispronouncedWord?: string }) => {
@@ -144,19 +170,20 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       errorContext: `Erreur faite pendant la conversation orale (semaine ${weekNumber})`,
     });
 
-    console.log('✅ Item ajouté à la toolbox');
+    addLog('✅ Correction ajoutée à la toolbox');
     window.dispatchEvent(new Event('toolboxUpdated'));
     setShowToolboxNotification(true);
     setTimeout(() => setShowToolboxNotification(false), 3000);
-  }, [addItem, weekNumber]);
+  }, [addItem, weekNumber, addLog]);
 
   const stopAudioProcessing = useCallback(() => {
+    addLog('🛑 Arrêt du traitement audio');
+    
     sourcesRef.current.forEach(source => {
       try { source.stop(); } catch (e) { /* ignore */ }
     });
     sourcesRef.current.clear();
 
-    // ✅ CHANGÉ : AudioWorklet au lieu de ScriptProcessor
     if (audioWorkletNodeRef.current) {
       audioWorkletNodeRef.current.disconnect();
       audioWorkletNodeRef.current = null;
@@ -172,7 +199,9 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
     
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-  }, []);
+    
+    stopKeepalive();
+  }, [addLog, stopKeepalive]);
 
   const updateVolume = () => {
     if (analyzerRef.current && connectionState === ConnectionState.CONNECTED) {
@@ -180,21 +209,30 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         analyzerRef.current.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
         setVolumeLevel(average);
+        
+        // Log volume toutes les 2 secondes si > 10
+        if (average > 10 && Date.now() % 2000 < 100) {
+          addLog(`🎤 Volume détecté: ${Math.floor(average)}`);
+        }
+        
         animationFrameRef.current = requestAnimationFrame(updateVolume);
     }
   };
 
   const startSession = async (duration: number) => {
     try {
+      addLog('🚀 Démarrage session');
       setSelectedDuration(duration);
       setTimeRemaining(duration * 60);
       setShowDurationSelector(false);
       setConnectionState(ConnectionState.CONNECTING);
       setErrorMsg(null);
+      setDebugLogs([]);
 
       const apiKey = import.meta.env.VITE_API_KEY;
       if (!apiKey) throw new Error("VITE_API_KEY manquante");
 
+      addLog(`📡 Modèle: ${GEMINI_MODEL_LIVE}`);
       const ai = new GoogleGenAI({ apiKey });
 
       const InputContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -203,8 +241,17 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       const inputCtx = new InputContextClass({ sampleRate: 16000 });
       const outputCtx = new OutputContextClass({ sampleRate: 24000 });
       
-      if (inputCtx.state === 'suspended') await inputCtx.resume();
-      if (outputCtx.state === 'suspended') await outputCtx.resume();
+      addLog(`🎤 Input context: ${inputCtx.sampleRate}Hz`);
+      addLog(`🔊 Output context: ${outputCtx.sampleRate}Hz`);
+      
+      if (inputCtx.state === 'suspended') {
+        await inputCtx.resume();
+        addLog('✅ Input context resumed');
+      }
+      if (outputCtx.state === 'suspended') {
+        await outputCtx.resume();
+        addLog('✅ Output context resumed');
+      }
 
       inputAudioContextRef.current = inputCtx;
       outputAudioContextRef.current = outputCtx;
@@ -213,15 +260,18 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
       const outputNode = outputCtx.createGain();
       outputNode.connect(outputCtx.destination);
 
+      addLog('🎤 Demande accès microphone...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
+      addLog('✅ Microphone autorisé');
 
       const config = {
         model: GEMINI_MODEL_LIVE,
         callbacks: {
           onopen: async () => {
-            console.log("✅ Connexion Live API ouverte");
+            addLog("✅ ===== CONNEXION LIVE API OUVERTE =====");
             setConnectionState(ConnectionState.CONNECTED);
+            lastActivityRef.current = Date.now();
             
             const source = inputCtx.createMediaStreamSource(stream);
             const analyzer = inputCtx.createAnalyser();
@@ -230,22 +280,27 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             analyzerRef.current = analyzer;
             updateVolume();
 
-            // ✅ CHANGÉ : AudioWorklet au lieu de ScriptProcessor
             try {
+              addLog('📦 Chargement AudioWorklet...');
               await inputCtx.audioWorklet.addModule('/microphone-processor.worklet.js');
+              addLog('✅ AudioWorklet chargé');
               
               const workletNode = new AudioWorkletNode(inputCtx, 'microphone-processor');
               audioWorkletNodeRef.current = workletNode;
 
-              // Écouter les données audio
               workletNode.port.onmessage = (event) => {
                 if (event.data.type === 'audiodata' && !isMicMuted) {
+                  audioChunkCountRef.current++;
+                  
+                  if (audioChunkCountRef.current % 100 === 0) {
+                    addLog(`📊 ${audioChunkCountRef.current} chunks audio envoyés`);
+                  }
+                  
                   const pcmBlob = new Blob([event.data.data], { type: 'application/octet-stream' });
                   
-                  if (sessionPromiseRef.current) {
-                    sessionPromiseRef.current.then(session => {
-                      session.sendRealtimeInput({ media: pcmBlob });
-                    }).catch(console.error);
+                  if (sessionRef.current) {
+                    sessionRef.current.sendRealtimeInput({ media: pcmBlob });
+                    lastActivityRef.current = Date.now();
                   }
                 }
               };
@@ -253,14 +308,20 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               source.connect(workletNode);
               workletNode.connect(inputCtx.destination);
               
-              console.log('✅ AudioWorklet microphone activé');
+              addLog('✅ AudioWorklet microphone connecté');
+              addLog('🎤 ===== MICROPHONE ACTIF - PARLEZ ! =====');
+
+              // ✅ Démarrer keepalive
+              startKeepalive();
 
             } catch (err) {
-              console.error('❌ Erreur AudioWorklet:', err);
-              throw new Error('AudioWorklet non supporté');
+              addLog(`❌ Erreur AudioWorklet: ${err}`);
+              throw err;
             }
           },
           onmessage: async (message: LiveServerMessage) => {
+            lastActivityRef.current = Date.now();
+            
             // Tool calls
             if (message.toolCall) {
                const functionCalls = message.toolCall.functionCalls;
@@ -268,20 +329,18 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
                  const call = functionCalls[0];
                  if (call.name === 'displayCorrection') {
                    const correctionData = call.args as unknown as Correction;
-                   console.log("📝 Correction reçue:", correctionData);
+                   addLog(`📝 Correction reçue: ${correctionData.errorType}`);
                    
                    setAllCorrections(prev => [...prev, correctionData]);
                    addCorrectionToToolbox(correctionData);
 
-                   if (sessionPromiseRef.current) {
-                     sessionPromiseRef.current.then(session => {
-                       session.sendToolResponse({
-                         functionResponses: [{
-                           id: call.id,
-                           name: call.name,
-                           response: { result: "Correction affichée." }
-                         }]
-                       });
+                   if (sessionRef.current) {
+                     sessionRef.current.sendToolResponse({
+                       functionResponses: [{
+                         id: call.id,
+                         name: call.name,
+                         response: { result: "Correction affichée." }
+                       }]
                      });
                    }
                  }
@@ -291,6 +350,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             // Audio
             const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData && outputCtx) {
+              addLog('🔊 Audio reçu de François');
               setIsAiSpeaking(true);
               const bytes = base64ToBytes(audioData);
               const buffer = await decodeAudioData(bytes, outputCtx, 24000, 1);
@@ -310,11 +370,15 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               sourcesRef.current.add(source);
               source.onended = () => {
                 sourcesRef.current.delete(source);
-                if (sourcesRef.current.size === 0) setIsAiSpeaking(false);
+                if (sourcesRef.current.size === 0) {
+                  setIsAiSpeaking(false);
+                  addLog('✅ François a fini de parler');
+                }
               };
             }
 
             if (message.serverContent?.interrupted) {
+              addLog('⚠️ Interruption détectée');
               sourcesRef.current.forEach(s => s.stop());
               sourcesRef.current.clear();
               nextStartTimeRef.current = 0;
@@ -322,17 +386,20 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
             }
 
             if (message.serverContent?.turnComplete) {
+              addLog('✅ Tour de parole terminé');
               setIsAiSpeaking(false);
             }
           },
           onclose: () => {
-            console.log("❌ Connexion fermée");
+            addLog("❌ ===== CONNEXION FERMÉE =====");
             setConnectionState(ConnectionState.DISCONNECTED);
+            stopKeepalive();
           },
           onerror: (err: any) => {
-            console.error("❌ Erreur:", err);
+            addLog(`❌ ERREUR: ${JSON.stringify(err)}`);
             setConnectionState(ConnectionState.ERROR);
             setErrorMsg("Erreur de connexion.");
+            stopKeepalive();
           }
         },
         
@@ -346,10 +413,19 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
         }
       };
 
+      addLog('🔌 Connexion à Gemini Live API...');
       sessionPromiseRef.current = ai.live.connect(config);
+      
+      sessionPromiseRef.current.then(session => {
+        sessionRef.current = session;
+        addLog('✅ Session Gemini prête');
+      }).catch(err => {
+        addLog(`❌ Erreur connexion: ${err}`);
+        throw err;
+      });
 
     } catch (err: any) {
-      console.error("❌ Erreur:", err);
+      addLog(`❌ Erreur fatale: ${err.message}`);
       setConnectionState(ConnectionState.ERROR);
       setErrorMsg("Impossible d'initialiser la session.");
       stopAudioProcessing();
@@ -366,18 +442,24 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   }, [connectionState]);
 
   const handleEndCall = () => {
+    addLog('🛑 Fin d\'appel demandée');
     stopAudioProcessing();
-    if (sessionPromiseRef.current) {
-      sessionPromiseRef.current.then(session => (session as any).close?.()).catch(() => {});
+    if (sessionRef.current) {
+      try {
+        (sessionRef.current as any).close?.();
+      } catch (e) {
+        addLog(`⚠️ Erreur fermeture session: ${e}`);
+      }
     }
     sessionPromiseRef.current = null;
+    sessionRef.current = null;
     onClose();
   };
 
   const handleReportDoubtOral = () => {
     const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
     
-    let correctionsText = '=== CORRECTIONS REÇUES ===\n\n';
+    let correctionsText = '=== CORRECTIONS ===\n\n';
     if (allCorrections.length === 0) {
       correctionsText += '(Aucune)\n\n';
     } else {
@@ -410,7 +492,7 @@ Cordialement`);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // UI (identique, juste sans ScriptProcessor)
+  // UI
   if (showDurationSelector) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
@@ -426,7 +508,8 @@ Cordialement`);
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
           <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
-          <p className="text-xs text-gray-500 mb-8">✅ AudioWorklet optimisé (pas de dépréciation)</p>
+          <p className="text-xs text-gray-500 mb-2">✅ Version DEBUG avec logs détaillés</p>
+          <p className="text-xs text-gray-500 mb-8">✅ Keepalive automatique + reconnexion</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -471,7 +554,7 @@ Cordialement`);
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
               <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
@@ -482,8 +565,22 @@ Cordialement`);
                   {isAiSpeaking ? '🔊' : '🎤'}
                 </div>
               </div>
+              <div className="text-sm text-gray-600">
+                {isAiSpeaking ? 'François parle...' : 'Parlez maintenant !'}
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                Volume: {Math.floor(volumeLevel)} | Chunks: {audioChunkCountRef.current}
+              </div>
             </div>
           )}
+        </div>
+
+        {/* ✅ LOGS DEBUG */}
+        <div className="mt-6 bg-black text-green-400 rounded-lg p-4 max-h-64 overflow-y-auto font-mono text-xs">
+          <div className="font-bold mb-2">📊 LOGS DEBUG :</div>
+          {debugLogs.map((log, i) => (
+            <div key={i}>{log}</div>
+          ))}
         </div>
 
         {allCorrections.length > 0 && (
