@@ -14,18 +14,18 @@ interface ToolBoxCategoryProps {
 }
 
 const categoryLabels: Record<CategoryType, string> = {
-  grammar: 'Grammaire',
-  vocabulary: 'Vocabulaire',
-  conjugation: 'Conjugaison',
-  pronunciation: 'Prononciation',
+  grammaire: 'Grammaire',
+  vocabulaire: 'Vocabulaire',
+  conjugaison: 'Conjugaison',
+  prononciation: 'Prononciation',
   strategy: 'Stratégies d\'apprentissage',
 };
 
 const categoryIcons: Record<CategoryType, string> = {
-  grammar: '📐',
-  vocabulary: '📚',
-  conjugation: '🔄',
-  pronunciation: '🗣️',
+  grammaire: '📐',
+  vocabulaire: '📚',
+  conjugaiison: '🔄',
+  prononciation: '🗣️',
   strategy: '💡',
 };
 
