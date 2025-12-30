@@ -76,18 +76,18 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
 
     // Trier les items par catégorie
     const itemsByCategory = {
-      grammar: data.items.filter(item => item.category === 'grammar'),
-      vocabulary: data.items.filter(item => item.category === 'vocabulary'),
-      conjugation: data.items.filter(item => item.category === 'conjugation'),
-      pronunciation: data.items.filter(item => item.category === 'pronunciation'),
+      grammaire: data.items.filter(item => item.category === 'grammar'),
+      vocabulaire: data.items.filter(item => item.category === 'vocabulary'),
+      conjugaison: data.items.filter(item => item.category === 'conjugation'),
+      prononciation: data.items.filter(item => item.category === 'pronunciation'),
       strategy: data.items.filter(item => item.category === 'strategy'),
     };
 
     const categoryLabels = {
-      grammar: '📐 GRAMMAIRE',
+      grammaire: '📐 GRAMMAIRE',
       vocabulary: '📚 VOCABULAIRE',
-      conjugation: '🔄 CONJUGAISON',
-      pronunciation: '🗣️ PRONONCIATION',
+      conjugaison: '🔄 CONJUGAISON',
+      prononciation: '🗣️ PRONONCIATION',
       strategy: '💡 STRATÉGIES',
     };
 
