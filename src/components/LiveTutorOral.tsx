@@ -1,8 +1,9 @@
 // src/components/LiveTutorOral.tsx
-// VERSION PRODUCTION - Prêt pour déploiement
+// VERSION GITHUB - Prêt pour déploiement
 // ✅ Corrections enrichies (grammaire, conjugaison, vocabulaire, prononciation)
 // ✅ Temps de parole augmenté (continuous: true)
 // ✅ Texte "À vous de parler" au lieu de "Prêt"
+// ✅ "Mode Oral - Semaine XX" sous l'avatar
 // ✅ Parser de corrections renforcé
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -193,7 +194,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           }
         }
 
-        // ✅ Détecter silence de 2 secondes
+        // ✅ Détecter silence de 3 secondes (temps augmenté)
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
         }
@@ -227,7 +228,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
             // Envoyer à Gemini
             await sendToGemini(userText);
-          }, 2000);  // ✅ Attendre 2 secondes de silence
+          }, 3000);  // ✅ 3 secondes de silence
         }
       };
 
@@ -613,8 +614,8 @@ Cordialement`);
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
-          <h2 className="text-3xl font-bold mb-4">Combien de temps voulez-vous pratiquer ?</h2>
-          <p className="text-gray-600 mb-8">Choisissez la durée de votre conversation avec François</p>
+          <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
+          <p className="text-gray-600 mb-8">Voix Chirp 3 HD - Corrections détaillées</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -627,7 +628,7 @@ Cordialement`);
               </button>
             ))}
           </div>
-          <p className="text-gray-500 mb-8">💡 Conseil : Commencez par 2-5 minutes pour vous familiariser</p>
+          <p className="text-gray-500 mt-8">💡 Conseil : Commencez par 2-5 minutes pour vous familiariser</p>
         </main>
       </div>
     );
@@ -663,7 +664,7 @@ Cordialement`);
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 shadow-2xl transition-all duration-300 ${
+              <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 shadow-2xl transition-all duration-300 ${
                 isSpeaking ? 'bg-[#2d5016] animate-pulse' :
                 isListeningRef.current ? 'bg-[#90c695] animate-pulse' :
                 'bg-[#2d5016]'
@@ -671,6 +672,10 @@ Cordialement`);
                 <div className="text-5xl text-white">
                   {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '💬'}
                 </div>
+              </div>
+
+              <div className="text-sm text-gray-500 mb-2">
+                Mode Oral - Semaine {weekNumber}
               </div>
 
               <div className="text-xl font-semibold mb-4">
