@@ -95,9 +95,9 @@ Explication : [explication brève, max 15 mots]
 Après avoir signalé l'erreur, continue la conversation normalement et encourage l'apprenant.`;
 
       const model = ai.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',  // ✅ CHANGÉ
-      systemInstruction: enrichedPrompt
-    });
+        model: 'gemini-2.0-flash-exp',  // ✅ Modèle qui fonctionne avec v1beta
+        systemInstruction: enrichedPrompt
+      });
 
       const chat = model.startChat({
         history: [],
@@ -271,14 +271,26 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       // Synthèse vocale avec Chirp 3 HD
       await speakWithChirp3HD(cleanResponse);
 
-      // Relancer l'écoute
-      console.log('⏳ Attente 2s avant relance...');
+      // Relancer l'écoute après que François ait fini de parler
+      console.log('⏳ Attente 3s avant relance...');
       setTimeout(() => {
-        if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
-          console.log('✅ Relance écoute');
-          startListening();
+        console.log(`🔍 État avant relance - Connected: ${connectionState === ConnectionState.CONNECTED}, Speaking: ${isSpeaking}`);
+        
+        if (connectionState === ConnectionState.CONNECTED) {
+          if (isSpeaking) {
+            console.log('⚠️ François parle encore, attente 2s de plus...');
+            setTimeout(() => {
+              console.log('✅ Relance écoute (après attente supplémentaire)');
+              startListening();
+            }, 2000);
+          } else {
+            console.log('✅ Relance écoute');
+            startListening();
+          }
+        } else {
+          console.log('❌ Connexion fermée, pas de relance');
         }
-      }, 2000);
+      }, 3000);
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
@@ -383,7 +395,10 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       source.connect(audioContext.destination);
 
       return new Promise<void>((resolve) => {
-        source.onended = () => resolve();
+        source.onended = () => {
+          console.log('🔊 Lecture audio terminée');
+          resolve();
+        };
         source.start(0);
       });
 
