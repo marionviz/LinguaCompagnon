@@ -365,7 +365,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
 
       {/* Guide d'utilisation */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Comment utiliser votre Boîte à Outils ?</h3>
+        <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Comment utiliser votre boîte à outils ?</h3>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>✓ Les corrections du mode oral sont ajoutées automatiquement</li>
           <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
