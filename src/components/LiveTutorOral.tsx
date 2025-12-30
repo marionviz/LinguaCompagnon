@@ -289,25 +289,37 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
               audioWorkletNodeRef.current = workletNode;
 
               workletNode.port.onmessage = (event) => {
-                if (event.data.type === 'audiodata' && !isMicMuted) {
-                  audioChunkCountRef.current++;
-                  
-                  if (audioChunkCountRef.current % 100 === 0) {
-                    addLog(`📊 ${audioChunkCountRef.current} chunks audio envoyés`);
-                  }
-                  
-                  const pcmBlob = new Blob([event.data.data], { type: 'application/octet-stream' });
-                  
-                  if (sessionRef.current) {
-                    sessionRef.current.sendRealtimeInput({ media: pcmBlob });
-                    lastActivityRef.current = Date.now();
-                  }
-                }
-              };
+  if (event.data.type === 'audiodata' && !isMicMuted) {
+    audioChunkCountRef.current++;
+    
+    if (audioChunkCountRef.current % 100 === 0) {
+      addLog(`📊 ${audioChunkCountRef.current} chunks audio envoyés`);
+    }
+    
+    // ✅ ENCODER EN BASE64
+    const bytes = new Uint8Array(event.data.data);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    
+    if (sessionRef.current) {
+      // ✅ ENVOYER AVEC LE BON FORMAT
+      sessionRef.current.sendRealtimeInput({
+        media: {
+          data: base64,
+          mimeType: 'audio/pcm;rate=16000'
+        }
+      });
+      lastActivityRef.current = Date.now();
+    }
+  }
+};
 
               source.connect(workletNode);
               workletNode.connect(inputCtx.destination);
-              
+
               addLog('✅ AudioWorklet microphone connecté');
               addLog('🎤 ===== MICROPHONE ACTIF - PARLEZ ! =====');
 
