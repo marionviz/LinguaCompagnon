@@ -1,12 +1,12 @@
 // src/components/LiveTutorOral.tsx
-// VERSION FINALE : Chirp 3 HD + gemini-1.5-flash
-// ✅ Voix française HD professionnelle
-// ✅ Parser corrections fonctionnel
-// ✅ Solution pérenne pour phase pilote
+// VERSION FINALE CORRIGÉE
+// ✅ NE PAS afficher transcription utilisateur
+// ✅ Seulement afficher corrections
+// ✅ Chirp 3 HD voix française
+// ✅ Corrections vers ToolBox
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import { ConnectionState, Correction } from '../typesOral';
 import { getOralWeekConfig } from '../constantsOral';
 import { useToolBox } from '../hooks/useToolBox';
@@ -26,7 +26,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
-  const [transcript, setTranscript] = useState<string>('');
   const [allCorrections, setAllCorrections] = useState<Correction[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showToolbox, setShowToolbox] = useState(false);
@@ -137,7 +136,6 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       recognition.onstart = () => {
         console.log('🎤 Écoute démarrée');
         isListeningRef.current = true;
-        setTranscript('');
       };
 
       recognition.onresult = async (event: any) => {
@@ -163,7 +161,6 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
 
         console.log('✅ Transcription acceptée');
         lastTranscriptRef.current = userText;
-        setTranscript(userText);
         isListeningRef.current = false;
 
         // Ajouter à l'historique
@@ -177,8 +174,14 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
         console.error('❌ Erreur reconnaissance:', event.error);
         isListeningRef.current = false;
         
-        if (event.error === 'no-speech') {
-          setTimeout(() => startListening(), 2000);
+        // ✅ Relancer automatiquement même si "no-speech"
+        if (event.error === 'no-speech' || event.error === 'audio-capture') {
+          console.log('⏳ Relance après erreur...');
+          setTimeout(() => {
+            if (connectionState === ConnectionState.CONNECTED) {
+              startListening();
+            }
+          }, 1500);
         } else if (event.error !== 'aborted') {
           setErrorMsg('Erreur reconnaissance vocale');
         }
@@ -197,7 +200,7 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       setErrorMsg('Microphone non accessible');
       setConnectionState(ConnectionState.ERROR);
     }
-  }, [isSpeaking]);
+  }, [isSpeaking, connectionState]);
 
   // ═══════════════════════════════════════════════════════════
   // PARSER DE CORRECTIONS
@@ -269,13 +272,13 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       await speakWithChirp3HD(cleanResponse);
 
       // Relancer l'écoute
-      console.log('⏳ Attente 3s avant relance...');
+      console.log('⏳ Attente 2s avant relance...');
       setTimeout(() => {
         if (connectionState === ConnectionState.CONNECTED && !isSpeaking) {
           console.log('✅ Relance écoute');
           startListening();
         }
-      }, 3000);
+      }, 2000);
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
@@ -314,13 +317,15 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
             },
             audioConfig: {
               audioEncoding: 'MP3',
-              speakingRate: 1.0  // Vitesse normale
+              speakingRate: 1.0
             }
           })
         }
       );
 
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Erreur Chirp 3 HD:', errorData);
         throw new Error(`Chirp 3 HD error: ${response.status}`);
       }
 
@@ -398,11 +403,18 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
     console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
 
     corrections.forEach((correction) => {
-      const category = correction.errorType || 'grammar';
+      // ✅ Déterminer la catégorie depuis errorType
+      let category: 'grammar' | 'conjugation' | 'vocabulary' | 'pronunciation' = 'grammar';
+      
+      const type = correction.errorType?.toLowerCase();
+      if (type === 'conjugation') category = 'conjugation';
+      else if (type === 'vocabulary') category = 'vocabulary';
+      else if (type === 'pronunciation') category = 'pronunciation';
+      else category = 'grammar';
       
       addItem({
-        category: category as any,
-        title: `Correction - ${category}`,
+        category,
+        title: `${category.charAt(0).toUpperCase() + category.slice(1)} - ${correction.explanation.substring(0, 30)}`,
         description: correction.explanation,
         example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
         errorContext: `Semaine ${weekNumber} - Mode Oral`,
@@ -440,7 +452,7 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       setTimeout(() => {
         console.log('✅ Première écoute');
         startListening();
-      }, 2000);
+      }, 1500);
 
     } catch (err: any) {
       console.error('❌ Erreur démarrage:', err);
@@ -514,7 +526,7 @@ Cordialement`);
   };
 
   // ═══════════════════════════════════════════════════════════
-  // RENDU UI
+  // RENDU UI - PAS DE TRANSCRIPTION AFFICHÉE
   // ═══════════════════════════════════════════════════════════
 
   if (showDurationSelector) {
@@ -532,7 +544,7 @@ Cordialement`);
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
           <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
-          <p className="text-gray-600 mb-8">Avec voix Chirp 3 HD qualité professionnelle</p>
+          <p className="text-gray-600 mb-8">Voix Chirp 3 HD - Corrections vers ToolBox</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -594,25 +606,29 @@ Cordialement`);
                 {isSpeaking ? 'François parle...' : isListeningRef.current ? 'Je vous écoute...' : 'Prêt'}
               </div>
 
-              {transcript && (
-                <div className="bg-white border rounded-lg p-4 max-w-2xl mb-4">
-                  <p className="text-sm text-gray-600">Vous :</p>
-                  <p className="text-gray-800">{transcript}</p>
-                </div>
-              )}
+              {/* ✅ PAS DE TRANSCRIPTION AFFICHÉE */}
             </div>
           )}
         </div>
 
+        {/* ✅ UNIQUEMENT LES CORRECTIONS AFFICHÉES */}
         {allCorrections.length > 0 && (
           <div className="mt-6 bg-white border rounded-lg p-4">
             <h3 className="text-sm font-bold mb-3">📝 Corrections ({allCorrections.length})</h3>
             <div className="space-y-3">
               {allCorrections.map((c, i) => (
                 <div key={i} className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
-                  <div className="text-sm text-gray-500 line-through">{c.originalSentence}</div>
-                  <div className="text-sm font-semibold text-gray-800">→ {c.correctedSentence}</div>
-                  <p className="text-xs text-gray-600 italic mt-1">💡 {c.explanation}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded uppercase">
+                      {c.errorType}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500 line-through mb-1">{c.originalSentence}</div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold">→</span>
+                    <div className="text-sm font-bold text-gray-800">{c.correctedSentence}</div>
+                  </div>
+                  <p className="text-xs text-gray-600 italic mt-2">💡 {c.explanation}</p>
                 </div>
               ))}
             </div>
