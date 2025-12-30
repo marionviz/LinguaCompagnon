@@ -592,12 +592,12 @@ Cordialement`);
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
-              <div className={`w-48 h-48 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
-                isSpeaking ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse' :
-                isListeningRef.current ? 'bg-gradient-to-br from-purple-400 to-pink-500 animate-pulse' :
-                'bg-gradient-to-br from-green-400 to-emerald-500'
+              <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 shadow-2xl transition-all duration-300 ${
+                isSpeaking ? 'bg-[#2d5016] animate-pulse' :
+                isListeningRef.current ? 'bg-[#90c695] animate-pulse' :
+                'bg-[#2d5016]'
               }`}>
-                <div className="text-6xl text-white">
+                <div className="text-5xl text-white">
                   {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '✓'}
                 </div>
               </div>
