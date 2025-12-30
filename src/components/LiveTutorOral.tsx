@@ -95,9 +95,9 @@ Explication : [explication brève, max 15 mots]
 Après avoir signalé l'erreur, continue la conversation normalement et encourage l'apprenant.`;
 
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        systemInstruction: enrichedPrompt
-      });
+      model: 'gemini-2.0-flash-exp',  // ✅ CHANGÉ
+      systemInstruction: enrichedPrompt
+    });
 
       const chat = model.startChat({
         history: [],
