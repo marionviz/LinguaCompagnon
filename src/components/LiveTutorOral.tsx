@@ -613,8 +613,8 @@ Cordialement`);
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
-          <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
-          <p className="text-gray-600 mb-8">Voix Chirp 3 HD - Corrections détaillées</p>
+          <h2 className="text-3xl font-bold mb-4">Combien de temps voulez-vous pratiquer ?</h2>
+          <p className="text-gray-600 mb-8">Choisissez la durée de votre conversation avec François</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -627,6 +627,7 @@ Cordialement`);
               </button>
             ))}
           </div>
+          <p className="text-gray-500 mb-8">💡 Conseil : Commencez par 2-5 minutes pour vous familiariser</p>
         </main>
       </div>
     );
