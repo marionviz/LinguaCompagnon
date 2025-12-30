@@ -71,7 +71,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
    • Vocabulaire : ${data.categoryCounts.vocabulary}
    • Conjugaison : ${data.categoryCounts.conjugation}
    • Prononciation : ${data.categoryCounts.pronunciation}
-   • Stratégies : ${data.categoryCounts.strategy}
 
 `;
 
@@ -81,7 +80,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
       vocabulary: data.items.filter(item => item.category === 'vocabulary'),
       conjugation: data.items.filter(item => item.category === 'conjugation'),
       pronunciation: data.items.filter(item => item.category === 'pronunciation'),
-      strategy: data.items.filter(item => item.category === 'strategy'),
     };
 
     const categoryLabels = {
@@ -89,7 +87,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
       vocabulary: '📚 VOCABULAIRE',
       conjugation: '🔄 CONJUGAISON',
       pronunciation: '🗣️ PRONONCIATION',
-      strategy: '💡 STRATÉGIES',
     };
 
     // Ajouter chaque catégorie
@@ -176,7 +173,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
       `📚 Vocabulaire : ${data.categoryCounts.vocabulary} corrections\n` +
       `🔄 Conjugaison : ${data.categoryCounts.conjugation} corrections\n` +
       `🗣️ Prononciation : ${data.categoryCounts.pronunciation} corrections\n` +
-      `💡 Stratégies : ${data.strategies.length} stratégies\n\n` +
       `TOTAL : ${data.totalItemsAdded} éléments\n\n` +
       '⚠️ Cette action est IRRÉVERSIBLE !\n\n' +
       'Voulez-vous vraiment continuer ?'
@@ -186,7 +182,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     }
   };
 
-  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
+  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation'];
   
   const categoryLabels: Record<CategoryType | 'all', string> = {
     all: 'Tout',
@@ -194,7 +190,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     vocabulary: 'Vocabulaire',
     conjugation: 'Conjugaison',
     pronunciation: 'Prononciation',
-    strategy: 'Stratégies',
   };
 
   const categoryIcons: Record<CategoryType | 'all', string> = {
@@ -203,7 +198,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     vocabulary: '📚',
     conjugation: '🔄',
     pronunciation: '🗣️',
-    strategy: '💡',
   };
 
   return (
