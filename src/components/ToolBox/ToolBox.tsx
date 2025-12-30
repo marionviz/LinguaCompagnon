@@ -1,19 +1,19 @@
 // src/components/ToolBox/ToolBox.tsx
+// ✅ MODIFIÉ : Suppression de l'onglet "Stratégies" mais conservation du tableau
 
 import React, { useState } from 'react';
 import { ToolBoxCategory as CategoryType } from '../../types/toolbox.types';
 import { useToolBox } from '../../hooks/useToolBox';
 import { ToolBoxCategory } from './ToolBoxCategory';
-import { StrategyReflection } from './StrategyReflection'; // ✅ NOUVEAU
+import { StrategyReflection } from './StrategyReflection';
 
 type Tab = CategoryType | 'all';
 
-// ✅ NOUVEAU : Interface avec weekNumber
 interface ToolBoxProps {
   weekNumber?: number;
 }
 
-export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅ MODIFIÉ
+export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const { data, addItem, removeItem, updateItem, reviewItem, getByCategory, exportData } = useToolBox();
 
@@ -28,7 +28,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     return () => window.removeEventListener('toolboxUpdated', handleToolboxUpdate);
   }, []);
   
-  // ✅ NOUVEAU : Gérer les réflexions de stratégies
   const handleSaveStrategyReflection = (reflection: string) => {
     addItem({
       category: 'strategy',
@@ -167,7 +166,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     URL.revokeObjectURL(url);
   };
 
-  // ✅ NOUVEAU : Fonction Effacer tout
   const handleClearAll = () => {
     if (window.confirm(
       '⚠️ ATTENTION !\n\n' +
@@ -186,7 +184,8 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
     }
   };
 
-  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation', 'strategy'];
+  // ✅ CHANGEMENT : Suppression de 'strategy' des onglets
+  const categories: CategoryType[] = ['grammar', 'vocabulary', 'conjugation', 'pronunciation'];
   
   const categoryLabels: Record<CategoryType | 'all', string> = {
     all: 'Tout',
@@ -198,7 +197,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
   };
 
   const categoryIcons: Record<CategoryType | 'all', string> = {
-    all: '📦',
+    all: '📂',
     grammar: '📐',
     vocabulary: '📚',
     conjugation: '🔄',
@@ -207,43 +206,22 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Ma Boîte à Outils</h2>
-        <p className="text-gray-600">
-          Conservez vos notes, corrections et stratégies d'apprentissage
-        </p>
-      </div>
-
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-brand-green">{data.totalItemsAdded}</div>
-          <div className="text-sm text-gray-600">Éléments ajoutés</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{data.strategies.length}</div>
-          <div className="text-sm text-gray-600">Stratégies découvertes</div>
-        </div>
-        
-        {/* Moyenne révisions */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">
-            {data.items.length > 0 
-              ? Math.round((data.items.reduce((sum, item) => sum + item.reviewCount, 0) / data.items.length) * 100) / 100
-              : 0}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">🛠️ Ma Boîte à Outils</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Toutes vos corrections et notes d'apprentissage
+            </p>
           </div>
-          <div className="text-sm text-gray-600">Moyenne révisions/item</div>
-        </div>
-        
-        {/* Boutons Exporter et Effacer */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 col-span-2 md:grid-cols-2">
-          <div className="grid grid-cols-2 gap-2">
+          
+          <div className="flex items-center gap-2">
             {/* Bouton Exporter */}
             <button
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-sm font-medium border border-blue-200"
               title="Exporter toutes les corrections en fichier texte"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,7 +245,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
         </div>
       </div>
 
-      {/* Onglets */}
+      {/* Onglets - SANS "Stratégies" */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
         <div className="flex overflow-x-auto">
           <button
@@ -308,28 +286,6 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
             {categories.map((category) => {
               const categoryItems = getByCategory(category);
               
-              {/* ✅ NOUVEAU : Afficher StrategyReflection pour l'onglet "strategy" */}
-              if (category === 'strategy') {
-                return (
-                  <div key={category} className="space-y-4">
-                    <ToolBoxCategory
-                      category={category}
-                      items={categoryItems}
-                      onAddItem={addItem}
-                      onRemoveItem={removeItem}
-                      onUpdateItem={updateItem}
-                      onReviewItem={reviewItem}
-                    />
-                    
-                    {/* ✅ Composant StrategyReflection */}
-                    <StrategyReflection 
-                      weekNumber={weekNumber}
-                      onSave={handleSaveStrategyReflection}
-                    />
-                  </div>
-                );
-              }
-              
               return (
                 <ToolBoxCategory
                   key={category}
@@ -342,36 +298,22 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
                 />
               );
             })}
+            
+            {/* ✅ TOUJOURS afficher StrategyReflection à la fin de l'onglet "Tout" */}
+            <StrategyReflection 
+              weekNumber={weekNumber}
+              onSave={handleSaveStrategyReflection}
+            />
           </div>
         ) : (
-          // ✅ NOUVEAU : Quand on clique sur l'onglet "Stratégies" uniquement
-          activeTab === 'strategy' ? (
-            <div className="space-y-4">
-              <ToolBoxCategory
-                category={activeTab as CategoryType}
-                items={getByCategory(activeTab as CategoryType)}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-                onUpdateItem={updateItem}
-                onReviewItem={reviewItem}
-              />
-              
-              {/* ✅ Composant StrategyReflection */}
-              <StrategyReflection 
-                weekNumber={weekNumber}
-                onSave={handleSaveStrategyReflection}
-              />
-            </div>
-          ) : (
-            <ToolBoxCategory
-              category={activeTab as CategoryType}
-              items={getByCategory(activeTab as CategoryType)}
-              onAddItem={addItem}
-              onRemoveItem={removeItem}
-              onUpdateItem={updateItem}
-              onReviewItem={reviewItem}
-            />
-          )
+          <ToolBoxCategory
+            category={activeTab as CategoryType}
+            items={getByCategory(activeTab as CategoryType)}
+            onAddItem={addItem}
+            onRemoveItem={removeItem}
+            onUpdateItem={updateItem}
+            onReviewItem={reviewItem}
+          />
         )}
       </div>
       
@@ -430,7 +372,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {  // ✅
           <li>✓ Développez un élément pour voir la correction, l'explication et le contexte</li>
           <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
           <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
-          <li>✓ Consultez les stratégies suggérées dans l'onglet Stratégies</li>
+          <li>✓ Consultez les stratégies suggérées dans le tableau "Stratégies pour la semaine"</li>
           <li>✓ Effacez tout pour repartir à zéro (action irréversible)</li>
         </ul>
       </div>
