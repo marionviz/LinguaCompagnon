@@ -40,6 +40,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef<string>('');
   const conversationHistoryRef = useRef<string[]>([]);
+  const noSpeechCountRef = useRef<number>(0);  // ✅ NOUVEAU
 
   // ═══════════════════════════════════════════════════════════
   // TIMER
@@ -143,6 +144,9 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
         
         console.log('📝 Transcription:', userText);
         
+        // ✅ Reset compteur no-speech
+        noSpeechCountRef.current = 0;
+        
         // Ignorer si identique
         if (userText === lastTranscriptRef.current) {
           console.log('⚠️ Identique, ignorée');
@@ -176,7 +180,18 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
         
         // ✅ Relancer automatiquement même si "no-speech"
         if (event.error === 'no-speech' || event.error === 'audio-capture') {
-          console.log('⏳ Relance après erreur...');
+          noSpeechCountRef.current++;
+          console.log(`⏳ Relance après erreur... (tentative ${noSpeechCountRef.current})`);
+          
+          // ⚠️ Si 3 erreurs "no-speech" consécutives
+          if (noSpeechCountRef.current >= 3) {
+            setErrorMsg('🎤 Microphone : Aucun son détecté. Vérifiez votre micro et parlez plus fort !');
+            console.error('⚠️ 3 erreurs no-speech consécutives ! Vérifiez le microphone !');
+            
+            // Reset compteur et continue quand même
+            noSpeechCountRef.current = 0;
+          }
+          
           setTimeout(() => {
             if (connectionState === ConnectionState.CONNECTED) {
               startListening();
@@ -276,19 +291,16 @@ Après avoir signalé l'erreur, continue la conversation normalement et encourag
       setTimeout(() => {
         console.log(`🔍 État avant relance - Connected: ${connectionState === ConnectionState.CONNECTED}, Speaking: ${isSpeaking}`);
         
-        if (connectionState === ConnectionState.CONNECTED) {
-          if (isSpeaking) {
-            console.log('⚠️ François parle encore, attente 2s de plus...');
-            setTimeout(() => {
-              console.log('✅ Relance écoute (après attente supplémentaire)');
-              startListening();
-            }, 2000);
-          } else {
-            console.log('✅ Relance écoute');
+        // ✅ FORCER LA RELANCE même si connectionState est faux (bug de timing)
+        if (isSpeaking) {
+          console.log('⚠️ François parle encore, attente 2s de plus...');
+          setTimeout(() => {
+            console.log('✅ Relance écoute (après attente supplémentaire)');
             startListening();
-          }
+          }, 2000);
         } else {
-          console.log('❌ Connexion fermée, pas de relance');
+          console.log('✅ Relance écoute');
+          startListening();
         }
       }, 3000);
 
