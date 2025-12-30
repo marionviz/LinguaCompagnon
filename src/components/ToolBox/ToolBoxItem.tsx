@@ -1,4 +1,5 @@
 // src/components/ToolBox/ToolBoxItem.tsx
+// ✅ MODIFIÉ : Suppression "Conseil", catégories en français
 
 import React, { useState } from 'react';
 import { ToolBoxItem as ToolBoxItemType } from '../../types/toolbox.types';
@@ -9,6 +10,15 @@ interface ToolBoxItemProps {
   onUpdate: (id: string, updates: Partial<ToolBoxItemType>) => void;
   onReview: (id: string) => void;
 }
+
+// ✅ Traduction des catégories en français
+const categoryLabelsFr: Record<string, string> = {
+  'grammar': 'Grammaire',
+  'conjugation': 'Conjugaison',
+  'vocabulary': 'Vocabulaire',
+  'pronunciation': 'Prononciation',
+  'strategy': 'Stratégies'
+};
 
 export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpdate, onReview }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -39,6 +49,20 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
     });
   };
 
+  // ✅ Extraire la catégorie en français depuis le titre
+  const getCategoryLabel = () => {
+    const lowerTitle = item.title.toLowerCase();
+    
+    // Chercher dans le titre
+    if (lowerTitle.includes('grammar') || lowerTitle.includes('grammaire')) return 'GRAMMAIRE';
+    if (lowerTitle.includes('conjugation') || lowerTitle.includes('conjugaison')) return 'CONJUGAISON';
+    if (lowerTitle.includes('vocabulary') || lowerTitle.includes('vocabulaire')) return 'VOCABULAIRE';
+    if (lowerTitle.includes('pronunciation') || lowerTitle.includes('prononciation')) return 'PRONONCIATION';
+    
+    // Fallback: utiliser la catégorie de l'item
+    return categoryLabelsFr[item.category]?.toUpperCase() || item.category.toUpperCase();
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -55,6 +79,11 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
           )}
           
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+            {/* ✅ Badge catégorie en français */}
+            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold text-[10px]">
+              {getCategoryLabel()}
+            </span>
+            <span>•</span>
             <span>📅 {formatDate(item.addedDate)}</span>
             <span>•</span>
             <span>👁️ Revu {item.reviewCount}x</span>
@@ -85,13 +114,7 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
                 </div>
               )}
 
-              {/* ✅ 3. CONSEIL EN TROISIÈME */}
-              {item.errorContext && (
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r text-sm">
-                  <strong className="text-amber-700">Conseil :</strong>
-                  <p className="text-amber-700 mt-1">{item.errorContext}</p>
-                </div>
-              )}
+              {/* ❌ CONSEIL SUPPRIMÉ - ne plus afficher item.errorContext */}
 
               {/* Stratégie (si présente) */}
               {item.learningStrategy && (
