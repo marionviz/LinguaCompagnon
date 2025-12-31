@@ -369,8 +369,7 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
         <ul className="text-sm text-blue-800 space-y-1">
           <li>✓ Les corrections du mode oral sont ajoutées automatiquement</li>
           <li>✓ Vous pouvez ajouter manuellement vos propres notes</li>
-          <li>✓ Développez un élément pour voir la correction, l'explication et le contexte</li>
-          <li>✓ Modifiez ou supprimez des éléments à tout moment</li>
+          <li>✓ Développez un élément pour voir la correction et l'explication</li>
           <li>✓ Exportez vos données en fichier texte pour les sauvegarder</li>
           <li>✓ Consultez les stratégies suggérées dans le tableau "Stratégies pour la semaine"</li>
           <li>✓ Effacez tout pour repartir à zéro (action irréversible)</li>

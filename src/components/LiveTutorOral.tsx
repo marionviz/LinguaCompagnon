@@ -666,7 +666,7 @@ Cordialement`);
               </div>
 
               <div className="text-sm text-gray-500 mb-2">
-                Mode Oral - Semaine {weekNumber}
+                Mode oral - semaine {weekNumber}
               </div>
 
               <div className="text-xl font-semibold mb-4">
