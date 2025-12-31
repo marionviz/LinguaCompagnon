@@ -1,5 +1,7 @@
 // src/components/ToolBox/ToolBoxItem.tsx
-// ✅ MODIFIÉ : Suppression "Conseil", catégories en français
+// ✅ Titre plus petit (text-sm) et sans coupure (break-words)
+// ✅ Suppression "Conseil"
+// ✅ Catégories en français
 
 import React, { useState } from 'react';
 import { ToolBoxItem as ToolBoxItemType } from '../../types/toolbox.types';
@@ -11,7 +13,6 @@ interface ToolBoxItemProps {
   onReview: (id: string) => void;
 }
 
-// ✅ Traduction des catégories en français
 const categoryLabelsFr: Record<string, string> = {
   'grammar': 'Grammaire',
   'conjugation': 'Conjugaison',
@@ -49,24 +50,21 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
     });
   };
 
-  // ✅ Extraire la catégorie en français depuis le titre
   const getCategoryLabel = () => {
     const lowerTitle = item.title.toLowerCase();
     
-    // Chercher dans le titre
     if (lowerTitle.includes('grammar') || lowerTitle.includes('grammaire')) return 'GRAMMAIRE';
     if (lowerTitle.includes('conjugation') || lowerTitle.includes('conjugaison')) return 'CONJUGAISON';
     if (lowerTitle.includes('vocabulary') || lowerTitle.includes('vocabulaire')) return 'VOCABULAIRE';
     if (lowerTitle.includes('pronunciation') || lowerTitle.includes('prononciation')) return 'PRONONCIATION';
     
-    // Fallback: utiliser la catégorie de l'item
     return categoryLabelsFr[item.category]?.toUpperCase() || item.category.toUpperCase();
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <input
               type="text"
@@ -75,23 +73,21 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
               className="w-full font-medium text-gray-800 border border-gray-300 rounded px-2 py-1 mb-2"
             />
           ) : (
-            <h4 className="font-medium text-gray-800 mb-1">{item.title}</h4>
+            <h4 className="font-medium text-gray-800 mb-1 text-sm break-words leading-tight">{item.title}</h4>
           )}
           
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-            {/* ✅ Badge catégorie en français */}
-            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold text-[10px]">
+          <div className="flex items-center gap-2 text-xs text-gray-500 mb-2 flex-wrap">
+            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold text-[10px] whitespace-nowrap">
               {getCategoryLabel()}
             </span>
             <span>•</span>
-            <span>📅 {formatDate(item.addedDate)}</span>
+            <span className="whitespace-nowrap">📅 {formatDate(item.addedDate)}</span>
             <span>•</span>
-            <span>👁️ Revu {item.reviewCount}x</span>
+            <span className="whitespace-nowrap">👁️ Revu {item.reviewCount}x</span>
           </div>
 
           {isExpanded && (
             <div className="mt-3 space-y-3">
-              {/* ✅ 1. CORRECTION EN PREMIER */}
               {item.example && (
                 <div className="bg-gray-50 border-l-4 border-gray-400 p-3 rounded-r text-sm">
                   <strong className="text-gray-700">Correction :</strong>
@@ -99,7 +95,6 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
                 </div>
               )}
 
-              {/* ✅ 2. EXPLICATION EN DEUXIÈME avec ⚠️ et encadré rouge */}
               {isEditing ? (
                 <textarea
                   value={editedDescription}
@@ -114,9 +109,6 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
                 </div>
               )}
 
-              {/* ❌ CONSEIL SUPPRIMÉ - ne plus afficher item.errorContext */}
-
-              {/* Stratégie (si présente) */}
               {item.learningStrategy && (
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r text-sm">
                   <strong className="text-blue-700">Stratégie :</strong>

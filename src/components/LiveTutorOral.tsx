@@ -1,10 +1,7 @@
 // src/components/LiveTutorOral.tsx
-// VERSION GITHUB - Prêt pour déploiement
-// ✅ Corrections enrichies (grammaire, conjugaison, vocabulaire, prononciation)
-// ✅ Temps de parole augmenté (continuous: true)
-// ✅ Texte "À vous de parler" au lieu de "Prêt"
-// ✅ "Mode Oral - Semaine XX" sous l'avatar
-// ✅ Parser de corrections renforcé
+// VERSION FINALE DÉPLOIEMENT
+// ✅ Un seul rond avec micro "À vous de parler"
+// ✅ Texte titres réduit et sans coupure
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -83,7 +80,6 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
 
       const ai = new GoogleGenerativeAI(apiKey);
       
-      // ✅ Prompt enrichi pour VRAIMENT corriger
       const enrichedPrompt = `${week.systemPrompt}
 
 TRÈS IMPORTANT - RÈGLES DE CORRECTION :
@@ -171,8 +167,8 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'fr-FR';
-      recognition.continuous = true;  // ✅ Mode continu
-      recognition.interimResults = true;  // ✅ Résultats intermédiaires
+      recognition.continuous = true;
+      recognition.interimResults = true;
 
       let finalTranscript = '';
       let interimTranscript = '';
@@ -194,7 +190,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           }
         }
 
-        // ✅ Détecter silence de 3 secondes (temps augmenté)
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
         }
@@ -204,11 +199,9 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
             const userText = finalTranscript.trim();
             console.log('📝 Transcription finale:', userText);
             
-            // Reset
             finalTranscript = '';
             noSpeechCountRef.current = 0;
             
-            // Ignorer si identique
             if (userText === lastTranscriptRef.current || userText.length < 3) {
               console.log('⚠️ Transcription ignorée (identique ou trop courte)');
               return;
@@ -217,18 +210,14 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
             console.log('✅ Transcription acceptée');
             lastTranscriptRef.current = userText;
             
-            // Stopper l'écoute
             if (recognitionRef.current) {
               recognitionRef.current.stop();
             }
             isListeningRef.current = false;
 
-            // Ajouter à l'historique
             conversationHistoryRef.current.push(`Apprenant: ${userText}`);
-
-            // Envoyer à Gemini
             await sendToGemini(userText);
-          }, 3000);  // ✅ 3 secondes de silence
+          }, 3000);
         }
       };
 
@@ -310,7 +299,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       console.log('🔄 Envoi à Gemini...');
 
-      // Construire contexte avec historique
       const history = conversationHistoryRef.current.slice(-6).join('\n');
       const contextPrompt = history ? `Historique récent:\n${history}\n\nApprenant: "${userText}"` : userText;
 
@@ -319,11 +307,9 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       
       console.log('✅ Réponse Gemini:', responseText);
 
-      // Ajouter à l'historique
       const cleanResponse = responseText.replace(/\[CORRECTION\][\s\S]*?\[\/CORRECTION\]/g, '').trim();
       conversationHistoryRef.current.push(`François: ${cleanResponse}`);
 
-      // Parser les corrections
       const corrections = parseCorrections(responseText);
       
       if (corrections.length > 0) {
@@ -332,10 +318,8 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
         saveCorrectionsToToolBox(corrections);
       }
 
-      // Synthèse vocale avec Chirp 3 HD
       await speakWithChirp3HD(cleanResponse);
 
-      // Relancer l'écoute
       console.log('⏳ Attente 3s avant relance...');
       setTimeout(() => {
         console.log(`🔍 État avant relance - Speaking: ${isSpeaking}`);
@@ -471,6 +455,14 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
     console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
 
+    // ✅ Traduction des catégories en français
+    const categoryLabels: Record<string, string> = {
+      'grammar': 'Grammaire',
+      'conjugation': 'Conjugaison',
+      'vocabulary': 'Vocabulaire',
+      'pronunciation': 'Prononciation'
+    };
+
     corrections.forEach((correction) => {
       let category: 'grammar' | 'conjugation' | 'vocabulary' | 'pronunciation' = 'grammar';
       
@@ -482,7 +474,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       
       addItem({
         category,
-        title: `${category.charAt(0).toUpperCase() + category.slice(1)} - ${correction.explanation.substring(0, 30)}`,
+        title: `${categoryLabels[category]} - ${correction.explanation.substring(0, 30)}`,
         description: correction.explanation,
         example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
         errorContext: `Semaine ${weekNumber} - Mode Oral`,
@@ -614,8 +606,8 @@ Cordialement`);
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-8">
-          <h2 className="text-3xl font-bold mb-4">Combien de temps voulez-vous pratiquer ?</h2>
-          <p className="text-gray-600 mb-8">Choisissez une durée pour interagir avec François</p>
+          <h2 className="text-3xl font-bold mb-4">Durée de pratique ?</h2>
+          <p className="text-gray-600 mb-8">Voix Chirp 3 HD - Corrections détaillées</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
             {[2, 5, 8, 10].map((d) => (
               <button
@@ -664,13 +656,12 @@ Cordialement`);
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
+              {/* ✅ UN SEUL ROND - 2 ÉTATS SEULEMENT */}
               <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 shadow-2xl transition-all duration-300 ${
-                isSpeaking ? 'bg-[#2d5016] animate-pulse' :
-                isListeningRef.current ? 'bg-[#90c695] animate-pulse' :
-                'bg-[#2d5016]'
+                isSpeaking ? 'bg-[#2d5016] animate-pulse' : 'bg-[#90c695]'
               }`}>
                 <div className="text-5xl text-white">
-                  {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '💬'}
+                  {isSpeaking ? '🔊' : '🎤'}
                 </div>
               </div>
 
@@ -679,7 +670,7 @@ Cordialement`);
               </div>
 
               <div className="text-xl font-semibold mb-4">
-                {isSpeaking ? 'François parle...' : isListeningRef.current ? 'Je vous écoute...' : 'À vous de parler !'}
+                {isSpeaking ? 'François parle...' : 'À vous de parler !'}
               </div>
             </div>
           )}
