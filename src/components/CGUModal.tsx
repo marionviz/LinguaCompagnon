@@ -58,8 +58,8 @@ export const CGUModal: React.FC<CGUModalProps> = ({ onClose }) => {
             
             <h4 className="font-semibold text-gray-800 mb-2">Hébergement et déploiement</h4>
             <ul className="list-disc list-inside text-gray-700 space-y-1 mb-3">
-              <li><strong>Code source :</strong> Hébergé sur GitHub</li>
-              <li><strong>Déploiement :</strong> Application déployée sur Vercel</li>
+              <li><strong>Code source :</strong> hébergé sur GitHub</li>
+              <li><strong>Déploiement :</strong> application déployée sur Vercel</li>
             </ul>
 
             <h4 className="font-semibold text-gray-800 mb-2">Technologies utilisées</h4>
@@ -104,8 +104,8 @@ export const CGUModal: React.FC<CGUModalProps> = ({ onClose }) => {
 
             <h4 className="font-semibold text-gray-800 mb-2">3.3 Conservation temporaire</h4>
             <ul className="list-disc list-inside text-gray-700 space-y-1 mb-3">
-              <li><strong>Traitement immédiat :</strong> Données supprimées après génération de la réponse</li>
-              <li><strong>Logs de sécurité :</strong> Conservation max 30 jours (détection abus/spam), puis suppression automatique</li>
+              <li><strong>Traitement immédiat :</strong> données supprimées après génération de la réponse</li>
+              <li><strong>Logs de sécurité :</strong> conservation max 30 jours (détection abus/spam), puis suppression automatique</li>
             </ul>
 
             <h4 className="font-semibold text-gray-800 mb-2">3.4 Accès aux données</h4>
