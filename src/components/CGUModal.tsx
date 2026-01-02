@@ -38,9 +38,9 @@ export const CGUModal: React.FC<CGUModalProps> = ({ onClose }) => {
             
             <h4 className="font-semibold text-gray-800 mb-2">Fonctionnalités principales</h4>
             <ul className="list-disc list-inside text-gray-700 space-y-1 mb-3">
-              <li><strong>Mode Écrit</strong> : activités progressives avec corrections instantanées</li>
-              <li><strong>Mode Oral</strong> : conversations en temps réel avec synthèse vocale</li>
-              <li><strong>Boîte à Outils personnelle</strong> : conservation et organisation de vos corrections</li>
+              <li><strong>Mode écrit</strong> : activités progressives avec corrections et exercices de remédiation</li>
+              <li><strong>Mode oral</strong> : conversation avec correction en temps réel</li>
+              <li><strong>Boîte à outils personnelle</strong> : conservation et organisation de vos corrections</li>
             </ul>
 
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
@@ -87,7 +87,7 @@ export const CGUModal: React.FC<CGUModalProps> = ({ onClose }) => {
 
             <h4 className="font-semibold text-gray-800 mb-2">3.2 Données traitées par Google Cloud AI</h4>
             <p className="text-gray-700 mb-2">
-              <strong>Vos conversations avec François</strong> sont traitées en temps réel par Google Cloud AI pour :
+              <strong>Vos conversations avec les avatars</strong> sont traitées en temps réel par Google Cloud AI pour :
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-1 mb-3">
               <li>Générer des réponses contextuelles</li>
