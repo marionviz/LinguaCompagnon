@@ -635,21 +635,51 @@ Cordialement`);
       )}
       
       <header className="p-4 border-b">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
-            <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="px-4 py-2 bg-gray-800 rounded-lg">
-              <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-            </div>
-            
-            <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
-            <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
-          </div>
-        </div>
+  {/* Mobile : 2 lignes */}
+  <div className="flex flex-col gap-3 md:hidden">
+    {/* Ligne 1 : Logo + Titre */}
+    <div className="flex items-center gap-3">
+      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+      <h1 className="text-lg font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+    </div>
+    
+    {/* Ligne 2 : Boutons */}
+    <div className="flex items-center gap-2 justify-between">
+      <div className="px-3 py-1.5 bg-gray-800 rounded-lg">
+        <div className="text-xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+      </div>
+      
+      <button 
+        onClick={handleReportDoubt} 
+        className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
+      >
+        ⚠️ Doute ?
+      </button>
+      <button 
+        onClick={handleEndCall} 
+        className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm"
+      >
+        ✕ Terminer
+      </button>
+    </div>
+  </div>
+
+  {/* Desktop : 1 ligne (comme avant) */}
+  <div className="hidden md:flex justify-between items-center">
+    <div className="flex items-center gap-3">
+      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+      <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+    </div>
+    
+    <div className="flex items-center gap-2">
+      <div className="px-4 py-2 bg-gray-800 rounded-lg">
+        <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+      </div>
+      
+      <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
+      <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
+    </div>
+  </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
