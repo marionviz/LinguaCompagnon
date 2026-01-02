@@ -4,6 +4,8 @@ import ChatInput from './components/ChatInput';
 import WeekSelector from './components/WeekSelector';
 import LiveTutorOral from './components/LiveTutorOral';
 import { ToolBox } from './components/ToolBox/ToolBox';
+import { Footer } from './components/Footer';
+import { CGUModal } from './components/CGUModal';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getWeekThemes } from './services/geminiService';
 import './index.css';
@@ -29,6 +31,7 @@ function App() {
   const [conversationMode, setConversationMode] = useState<ConversationMode>(null);
   const [showModeSelector, setShowModeSelector] = useState(true);
   const [showOralWeekSelector, setShowOralWeekSelector] = useState(false);
+  const [showCGU, setShowCGU] = useState(false);
 
   const chatRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -352,7 +355,11 @@ Un apprenant`);
   // ====== ÉCRAN SÉLECTION MODE INITIAL ======
   if (showModeSelector) {
     return (
-      <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 font-sans">
+      <>
+        {/* ✅ MODAL CGU */}
+        {showCGU && <CGUModal onClose={() => setShowCGU(false)} />}
+        
+        <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 font-sans">
         <header className="p-6 bg-white border-b border-gray-200">
           <div className="flex items-center justify-center gap-3">
             <img src="/LC_chat2.PNG" alt="LinguaCompagnon" className="w-10 h-10 rounded-full shadow-sm" />
@@ -419,7 +426,11 @@ Un apprenant`);
 </button>
           </div>
         </main>
+        
+        {/* ✅ FOOTER */}
+        <Footer onCGUClick={() => setShowCGU(true)} />
       </div>
+      </>
     );
   }
 
@@ -494,7 +505,11 @@ Un apprenant`);
  // ====== MODE BOÎTE À OUTILS ======
   if (conversationMode === 'toolbox') {
     return (
-      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+      <>
+        {/* ✅ MODAL CGU */}
+        {showCGU && <CGUModal onClose={() => setShowCGU(false)} />}
+        
+        <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
         <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -518,7 +533,11 @@ Un apprenant`);
         <main className="flex-grow overflow-y-auto">
           <ToolBox weekNumber={currentWeek} />
         </main>
+        
+        {/* ✅ FOOTER */}
+        <Footer onCGUClick={() => setShowCGU(true)} />
       </div>
+      </>
     );
   }
 
@@ -539,7 +558,11 @@ if (conversationMode === 'oral') {
 
   // ====== MODE ÉCRIT ======
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+    <>
+      {/* ✅ MODAL CGU */}
+      {showCGU && <CGUModal onClose={() => setShowCGU(false)} />}
+      
+      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
@@ -609,7 +632,11 @@ if (conversationMode === 'oral') {
     hasMessages={messages.length > 0}
   />
 </footer>
+
+        {/* ✅ FOOTER */}
+        <Footer onCGUClick={() => setShowCGU(true)} />
     </div>
+    </>
   );
 }
 
