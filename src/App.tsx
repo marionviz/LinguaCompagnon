@@ -373,7 +373,7 @@ Un apprenant`);
         </header>
 
         <main className="flex-grow flex flex-col items-center justify-center p-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-6">
             <h2 className="text-4xl font-bold text-gray-800 mb-4">
               Comment voulez-vous pratiquer ?
             </h2>
@@ -454,7 +454,7 @@ Un apprenant`);
         </header>
 
         <main className="flex-grow flex flex-col items-center justify-center p-8 bg-gray-50">
-          <div className="text-center mb-12">
+          <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
               Choisissez une semaine
             </h2>
