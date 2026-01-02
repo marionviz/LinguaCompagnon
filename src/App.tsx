@@ -393,7 +393,7 @@ Un apprenant`);
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Mode Écrit</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Mode écrit</h3>
               <p className="text-gray-600 text-center text-sm mb-3">
                 Conversation textuelle avec l'avatar de Marion
               </p>
@@ -414,7 +414,7 @@ Un apprenant`);
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
     </svg>
   </div>
-  <h3 className="text-xl font-bold text-gray-800 mb-2">Mode Oral</h3>
+  <h3 className="text-xl font-bold text-gray-800 mb-2">Mode oral</h3>
   <p className="text-gray-600 text-center text-sm mb-3">
     Conversation vocale avec l'avatar de François
   </p>
