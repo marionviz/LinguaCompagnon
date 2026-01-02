@@ -372,32 +372,32 @@ Un apprenant`);
           </p>
         </header>
 
-        <main className="flex-grow flex flex-col items-center justify-center p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
+        <main className="flex-grow flex flex-col items-center justify-center p-6">
+          <div className="text-center mb-4">
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">
               Comment voulez-vous pratiquer ?
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base">
               Choisissez le mode qui correspond à vos besoins d'apprentissage
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
             {/* ✅ MODE ÉCRIT */}
             <button
               onClick={() => handleModeSelect('ecrit')}
-              className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
+              className="group flex flex-col items-center p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
             >
-              <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
-                <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
+                <svg className="w-10 h-10 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Écrit</h3>
-              <p className="text-gray-600 text-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Mode Écrit</h3>
+              <p className="text-gray-600 text-center text-sm mb-3">
                 Conversation textuelle avec l'avatar de Marion
               </p>
-              <ul className="text-sm text-gray-500 space-y-2 text-left">
+              <ul className="text-xs text-gray-500 space-y-1 text-left">
                 <li>✓ Corrections visuelles</li>
                 <li>✓ Encouragement à rédiger</li>
                 <li>✓ Exercices de systématisation</li>
@@ -407,18 +407,18 @@ Un apprenant`);
             {/* ✅ MODE ORAL */}
 <button
   onClick={() => handleModeSelect('oral')}
-  className="group flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
+  className="group flex flex-col items-center p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300"
 >
-  <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
-    <svg className="w-12 h-12 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
+    <svg className="w-10 h-10 text-gray-600 group-hover:text-brand-green transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
     </svg>
   </div>
-  <h3 className="text-2xl font-bold text-gray-800 mb-3">Mode Oral</h3>
-  <p className="text-gray-600 text-center mb-4">
+  <h3 className="text-xl font-bold text-gray-800 mb-2">Mode Oral</h3>
+  <p className="text-gray-600 text-center text-sm mb-3">
     Conversation vocale avec l'avatar de François
   </p>
-  <ul className="text-sm text-gray-500 space-y-2 text-left">
+  <ul className="text-xs text-gray-500 space-y-1 text-left">
     <li>✓ Interaction en contexte</li>
     <li>✓ Feedback immédiat</li>
     <li>✓ Boîte à outils intégrée</li>
@@ -437,7 +437,11 @@ Un apprenant`);
   // ====== ÉCRAN SÉLECTION SEMAINE ORAL ======
   if (showOralWeekSelector && conversationMode === 'oral') {
     return (
-      <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
+      <>
+        {/* ✅ MODAL CGU */}
+        {showCGU && <CGUModal onClose={() => setShowCGU(false)} />}
+        
+        <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white font-sans">
         <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-800">
@@ -453,28 +457,28 @@ Un apprenant`);
           </div>
         </header>
 
-        <main className="flex-grow flex flex-col items-center justify-center p-8 bg-gray-50">
-          <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+        <main className="flex-grow flex flex-col items-center justify-center p-6 bg-gray-50">
+          <div className="text-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
               Choisissez une semaine
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base">
               Sélectionnez la semaine que vous souhaitez pratiquer à l'oral
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full max-w-4xl">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((week) => {
               const weekTheme = getWeekThemes(week);
               return (
                 <button
                 key={week}
                 onClick={() => handleOralWeekSelect(week)}
-                className="group relative p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 text-left"
+                className="group relative p-3 bg-white rounded-xl border-2 border-gray-200 hover:border-brand-green hover:shadow-xl transition-all duration-300 text-left"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-brand-green/10 group-hover:bg-brand-green/20 flex items-center justify-center transition-colors">
-                    <span className="text-base font-bold text-brand-green transition-colors">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-full bg-brand-green/10 group-hover:bg-brand-green/20 flex items-center justify-center transition-colors">
+                    <span className="text-sm font-bold text-brand-green transition-colors">
                       {week}
                     </span>
                   </div>
@@ -495,11 +499,15 @@ Un apprenant`);
             })}
           </div>
 
-          <p className="mt-8 text-sm text-gray-500">
+          <p className="mt-4 text-xs text-gray-500">
             💡 Chaque semaine a des objectifs pédagogiques spécifiques
           </p>
         </main>
+        
+        {/* ✅ FOOTER */}
+        <Footer onCGUClick={() => setShowCGU(true)} />
       </div>
+      </>
     );
   }
  // ====== MODE BOÎTE À OUTILS ======
