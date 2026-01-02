@@ -653,7 +653,7 @@ Cordialement`);
         onClick={handleReportDoubt} 
         className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
       >
-        ⚠️ Doute ?
+        ⚠️ un doute?
       </button>
       <button 
         onClick={handleEndCall} 
