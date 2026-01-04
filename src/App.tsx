@@ -577,7 +577,12 @@ if (conversationMode === 'oral') {
            <img src="/avatar.jpg" alt="Marion" className="w-10 h-10 rounded-full shadow-sm object-cover" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
-                Lingua<span className="text-brand-green">Compagnon</span>
+            <button 
+            onClick={handleBackToModeSelector}
+            className="hover:opacity-80 transition-opacity"
+            >
+            Lingua<span className="text-brand-green">Compagnon</span>
+            </button>
               </h1>
               <p className="text-xs text-gray-500">Mode Écrit</p>
             </div>
