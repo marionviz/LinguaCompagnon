@@ -2,6 +2,7 @@
 // ✅ Titre plus petit (text-sm) et sans coupure (break-words)
 // ✅ Suppression "Conseil"
 // ✅ Catégories en français
+// ✅ NOUVEAU : Bouton "Voir plus" pour titres longs
 
 import React, { useState } from 'react';
 import { ToolBoxItem as ToolBoxItemType } from '../../types/toolbox.types';
@@ -26,6 +27,7 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(item.title);
   const [editedDescription, setEditedDescription] = useState(item.description);
+  const [showFullTitle, setShowFullTitle] = useState(false); // ✅ NOUVEAU
 
   const handleSave = () => {
     onUpdate(item.id, {
@@ -61,6 +63,9 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
     return categoryLabelsFr[item.category]?.toUpperCase() || item.category.toUpperCase();
   };
 
+  // ✅ Vérifier si le titre est long (plus de 50 caractères)
+  const isTitleLong = item.title.length > 50;
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -73,7 +78,41 @@ export const ToolBoxItem: React.FC<ToolBoxItemProps> = ({ item, onRemove, onUpda
               className="w-full font-medium text-gray-800 border border-gray-300 rounded px-2 py-1 mb-2"
             />
           ) : (
-            <h4 className="font-medium text-gray-800 mb-1 text-sm break-words leading-tight">{item.title}</h4>
+            <div className="mb-1">
+              {/* ✅ Titre avec gestion du truncate */}
+              <h4 
+                className={`font-medium text-gray-800 text-sm break-words leading-tight ${
+                  !showFullTitle && isTitleLong ? 'line-clamp-2' : ''
+                }`}
+                title={isTitleLong ? item.title : undefined}
+              >
+                {item.title}
+              </h4>
+              
+              {/* ✅ Bouton "Voir plus" si titre long */}
+              {isTitleLong && (
+                <button
+                  onClick={() => setShowFullTitle(!showFullTitle)}
+                  className="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                >
+                  {showFullTitle ? (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      Voir moins
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      Voir le titre complet
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
           
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2 flex-wrap">
