@@ -1,10 +1,11 @@
 // src/components/ToolBox/StrategyReflection.tsx
+// ✅ VERSION CORRIGÉE : La réflexion reste visible après enregistrement
 
 import React, { useState } from 'react';
 import { getStrategiesForWeek, getStrategiesByType, LearningStrategies } from '../../data/strategies';
 
 interface StrategyReflectionProps {
-  weekNumber: number; // ✅ NOUVEAU : Semaine en cours
+  weekNumber: number;
   onSave: (reflection: string) => void;
 }
 
@@ -15,8 +16,8 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
   const [isExpanded, setIsExpanded] = useState(false);
   const [showStrategies, setShowStrategies] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('all');
+  const [savedReflection, setSavedReflection] = useState(''); // ✅ NOUVEAU
 
-  // ✅ Récupérer les stratégies de la semaine
   const allStrategies = getStrategiesForWeek(weekNumber);
   const filteredStrategies = filterType === 'all' 
     ? allStrategies 
@@ -26,8 +27,9 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
     e.preventDefault();
     if (reflection.trim()) {
       onSave(reflection.trim());
-      setReflection('');
-      setIsExpanded(false);
+      setSavedReflection(reflection.trim()); // ✅ SAUVEGARDER dans l'état local
+      setReflection(''); // ✅ Vider le textarea
+      // ✅ NE PAS fermer : setIsExpanded reste true
     }
   };
 
@@ -47,9 +49,7 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
 
   return (
     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-      {/* ═══════════════════════════════════════════════════════ */}
       {/* SECTION 1 : STRATÉGIES SUGGÉRÉES */}
-      {/* ═══════════════════════════════════════════════════════ */}
       <div>
         <button
           onClick={() => setShowStrategies(!showStrategies)}
@@ -142,7 +142,6 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
                     key={index}
                     className="bg-white border border-purple-200 rounded-lg p-3"
                   >
-                    {/* En-tête */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{categoryIcons[strategy.errorType]}</span>
                       <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
@@ -152,12 +151,10 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
                       <span className="text-xs text-gray-600">{strategy.errorPattern}</span>
                     </div>
 
-                    {/* Stratégie */}
                     <p className="text-sm text-gray-800 mb-2 leading-relaxed">
                       {strategy.strategy}
                     </p>
 
-                    {/* Exemple */}
                     {strategy.example && (
                       <div className="bg-purple-50 border-l-4 border-purple-400 p-2 rounded-r">
                         <p className="text-xs text-purple-800">
@@ -173,9 +170,7 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
       {/* SECTION 2 : MES RÉFLEXIONS PERSONNELLES */}
-      {/* ═══════════════════════════════════════════════════════ */}
       <div className="border-t border-purple-300 pt-4">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -196,46 +191,66 @@ export const StrategyReflection: React.FC<StrategyReflectionProps> = ({ weekNumb
         </button>
 
         {isExpanded && (
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-purple-800 mb-2">
-                Quelle stratégie d'apprentissage avez-vous découverte aujourd'hui ?
-              </label>
-              <textarea
-                value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
-                placeholder="Ex: J'ai remarqué que répéter à voix haute m'aide à mémoriser les conjugaisons..."
-                rows={4}
-                className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={!reflection.trim()}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
-              >
-                💾 Enregistrer ma réflexion
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReflection('');
-                  setIsExpanded(false);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
+          <div className="mt-4 space-y-3">
+            {/* ✅ NOUVEAU : Afficher la réflexion sauvegardée si elle existe */}
+            {savedReflection && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-lg">✅</span>
+                  <p className="text-xs font-semibold text-green-800">Réflexion enregistrée :</p>
+                </div>
+                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                  {savedReflection}
+                </p>
+                <button
+                  onClick={() => setSavedReflection('')}
+                  className="mt-2 text-xs text-green-700 hover:text-green-900 underline"
+                >
+                  Masquer
+                </button>
+              </div>
+            )}
+
+            {/* Formulaire */}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-purple-800 mb-2">
+                  Quelle stratégie d'apprentissage avez-vous découverte aujourd'hui ?
+                </label>
+                <textarea
+                  value={reflection}
+                  onChange={(e) => setReflection(e.target.value)}
+                  placeholder="Ex: J'ai remarqué que répéter à voix haute m'aide à mémoriser les conjugaisons..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!reflection.trim()}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                >
+                  💾 Enregistrer ma réflexion
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReflection('');
+                    setIsExpanded(false);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
       {/* AIDE */}
-      {/* ═══════════════════════════════════════════════════════ */}
       <div className="bg-purple-100 border border-purple-300 rounded-lg p-3">
         <p className="text-xs text-purple-800 leading-relaxed">
           <strong>💡 Conseil :</strong> Consultez les stratégies suggérées ci-dessus pour progresser sur vos points faibles. 

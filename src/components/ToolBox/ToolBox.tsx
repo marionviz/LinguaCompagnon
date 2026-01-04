@@ -332,12 +332,12 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
               <div 
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
                 style={{ 
-                  width: `${Math.min(100, (data.items.reduce((sum, item) => sum + item.reviewCount, 0) / 20) * 100)}%` 
+                  width: `${Math.min(100, (data.items.reduce((sum, item) => sum + item.reviewCount, 0) / 10) * 100)}%` 
                 }}
               />
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Objectif : 20 révisions pour maîtriser vos corrections
+              Objectif : 10 révisions pour maîtriser vos corrections
             </p>
           </div>
 
@@ -347,9 +347,9 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
                 const totalReviews = data.items.reduce((sum, item) => sum + item.reviewCount, 0);
                 if (totalReviews === 0) {
                   return "🎯 Commencez à réviser vos corrections !";
-                } else if (totalReviews < 5) {
+                } else if (totalReviews < 4) {
                   return "🚀 Bon début ! Continuez à réviser régulièrement !";
-                } else if (totalReviews < 15) {
+                } else if (totalReviews < 8) {
                   return "⭐ Excellent travail ! Vos révisions portent leurs fruits !";
                 } else {
                   return "🏆 Impressionnant ! Vous êtes un(e) apprenant(e) assidu(e) !";
