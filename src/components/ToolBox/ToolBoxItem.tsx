@@ -1,8 +1,4 @@
 // src/components/ToolBox/ToolBoxItem.tsx
-// ✅ Titre plus petit (text-sm) et sans coupure (break-words)
-// ✅ Suppression "Conseil"
-// ✅ Catégories en français
-// ✅ NOUVEAU : Bouton "Voir plus" pour titres longs
 
 import React, { useState } from 'react';
 import { ToolBoxItem as ToolBoxItemType } from '../../types/toolbox.types';
