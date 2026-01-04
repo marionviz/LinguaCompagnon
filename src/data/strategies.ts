@@ -185,6 +185,13 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
   },
   {
     weekNumber: 5,
+    errorType: 'grammar',
+    errorPattern: 'exception indicatif',
+    strategy: 'EXCEPTION : espérer QUE + indicatif.',
+    example: 'Il espère que tu vas bien. Nous espérons que tu as passé de bonnes vacances.'
+  },
+  {
+    weekNumber: 5,
     errorType: 'conjugation',
     errorPattern: 'subjonctif irrégulier',
     strategy: 'Subjonctifs irréguliers à mémoriser : ÊTRE (sois), AVOIR (aie), ALLER (aille), FAIRE (fasse), POUVOIR (puisse), SAVOIR (sache).',
