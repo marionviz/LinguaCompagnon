@@ -323,37 +323,21 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
         <div className="space-y-3">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Révisions cette semaine</span>
+              <span className="text-sm font-medium text-gray-700">Vos révisions</span>
               <span className="text-sm font-bold text-purple-600">
-                {data.items.reduce((sum, item) => {
-                  const reviewsThisWeek = item.reviewDates?.filter(date => {
-                    const reviewDate = new Date(date);
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    return reviewDate >= weekAgo;
-                  }).length || 0;
-                  return sum + reviewsThisWeek;
-                }, 0)} révisions effectuées
+                {data.items.reduce((sum, item) => sum + item.reviewCount, 0)} révisions effectuées
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
                 style={{ 
-                  width: `${Math.min(100, (data.items.reduce((sum, item) => {
-                    const reviewsThisWeek = item.reviewDates?.filter(date => {
-                      const reviewDate = new Date(date);
-                      const weekAgo = new Date();
-                      weekAgo.setDate(weekAgo.getDate() - 7);
-                      return reviewDate >= weekAgo;
-                    }).length || 0;
-                    return sum + reviewsThisWeek;
-                  }, 0) / 10) * 100)}%` 
+                  width: `${Math.min(100, (data.items.reduce((sum, item) => sum + item.reviewCount, 0) / 20) * 100)}%` 
                 }}
               />
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Objectif : 10 révisions par semaine pour consolider vos acquis
+              Objectif : 20 révisions pour maîtriser vos corrections
             </p>
           </div>
 
@@ -363,9 +347,9 @@ export const ToolBox: React.FC<ToolBoxProps> = ({ weekNumber = 1 }) => {
                 const totalReviews = data.items.reduce((sum, item) => sum + item.reviewCount, 0);
                 if (totalReviews === 0) {
                   return "🎯 Commencez à réviser vos corrections !";
-                } else if (totalReviews < 10) {
+                } else if (totalReviews < 5) {
                   return "🚀 Bon début ! Continuez à réviser régulièrement !";
-                } else if (totalReviews < 30) {
+                } else if (totalReviews < 15) {
                   return "⭐ Excellent travail ! Vos révisions portent leurs fruits !";
                 } else {
                   return "🏆 Impressionnant ! Vous êtes un(e) apprenant(e) assidu(e) !";
