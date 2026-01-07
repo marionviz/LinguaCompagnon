@@ -49,6 +49,7 @@ const getWeekContent = (week: number): string => {
 - Expressions de sentiments : "C'est génial que...", "Dommage que...", "Je suis surpris que...".
 **Grammaire :**
 - Le subjonctif présent après les expressions de sentiments et d'opinion.
+- Règle : 1 même sujet -> verbe + de + infinitif. 2 sujets différents -> verbe + que + subjonctif.
 - Distinction entre le vouvoiement (formel) et le tutoiement (informel).
 **Objectif de la conversation :** Proposez un jeu de rôle où l'apprenant doit annoncer une nouvelle (ex: il a eu une promotion) et doit réagir à une nouvelle que vous annoncez. Il doit utiliser des structures qui demandent le subjonctif.
 `;
@@ -61,7 +62,7 @@ const getWeekContent = (week: number): string => {
 - Expressions : "J'aimerais que...", "J'ai peur de...", "Je doute que...".
 **Grammaire :**
 - Consolidation de l'utilisation du subjonctif ou de l'infinitif après les verbes de sentiment, de volonté et de doute.
-- Règle : 1 sujet -> verbe + de + infinitif. 2 sujets -> verbe + que + subjonctif.
+- Règle : 1 même sujet -> verbe + de + infinitif. 2 sujets différents -> verbe + que + subjonctif.
 **Objectif de la conversation :** Discutez des aspirations professionnelles ou personnelles de l'apprenant. Posez des questions comme "Qu'est-ce que vous aimeriez faire dans 5 ans ?" ou "Y a-t-il quelque chose que vous craignez ?". Corrigez l'emploi du subjonctif/infinitif.
 `;
     case 6:
