@@ -549,8 +549,6 @@ Un apprenant`);
     );
   }
 
-  // ====== MODE ORAL ======
-  // ✅ NOUVEAU (marche)
 // ====== MODE ORAL ======
 if (conversationMode === 'oral') {
   return (

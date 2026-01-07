@@ -47,8 +47,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onDownload, isLoad
 
   return (
     <div className="flex flex-col bg-gray-100 border-t border-gray-200">
-      {/* Caractères spéciaux */}
-      <div className="flex gap-2 px-3 pt-2 pb-0 overflow-x-auto">
+      {/* ✅ Caractères spéciaux + Bouton Télécharger à droite */}
+      <div className="flex gap-2 px-3 pt-2 pb-0 overflow-x-auto items-center">
         {specialChars.map((char) => (
           <button
             key={char}
@@ -60,25 +60,26 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onDownload, isLoad
             {char}
           </button>
         ))}
+        
+        {/* ✅ BOUTON TÉLÉCHARGER - Plus grand, bleu, à la fin des caractères */}
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={!hasMessages}
+          className="ml-auto flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title="Télécharger la conversation"
+          aria-label="Télécharger la conversation"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span className="text-sm font-medium">Télécharger</span>
+        </button>
       </div>
 
-      {/* Zone de saisie + boutons */}
+      {/* ✅ Zone de saisie + bouton Envoi à droite */}
       <form onSubmit={handleSubmit} className="flex items-end gap-2 p-2 pt-2">
-        {/* ✅ BOUTON ENVOI À GAUCHE */}
-        <button
-          type="submit"
-          disabled={isLoading || !inputValue.trim()}
-          aria-label="Envoyer le message"
-          className="flex-shrink-0 bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green shadow-md"
-        >
-          {isLoading ? (
-            <div className="w-6 h-6 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-          ) : (
-            <SendIcon className="w-6 h-6" />
-          )}
-        </button>
-
-        {/* ✅ TEXTAREA AGRANDIE (3 lignes) */}
+        {/* ✅ TEXTAREA */}
         <textarea
           ref={textareaRef}
           value={inputValue}
@@ -90,18 +91,18 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onDownload, isLoad
           disabled={isLoading}
         />
 
-        {/* ✅ BOUTON TÉLÉCHARGER À DROITE (bien visible) */}
+        {/* ✅ BOUTON ENVOI À DROITE */}
         <button
-          type="button"
-          onClick={onDownload}
-          disabled={!hasMessages}
-          className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-3 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          title="Télécharger la conversation"
-          aria-label="Télécharger la conversation"
+          type="submit"
+          disabled={isLoading || !inputValue.trim()}
+          aria-label="Envoyer le message"
+          className="flex-shrink-0 bg-brand-green text-white p-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green shadow-md"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
+          {isLoading ? (
+            <div className="w-6 h-6 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+          ) : (
+            <SendIcon className="w-6 h-6" />
+          )}
         </button>
       </form>
     </div>

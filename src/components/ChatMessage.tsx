@@ -59,7 +59,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         </div>
         
-        {/* ✅ BOUTONS POUR LES MESSAGES DE MARION */}
+        {/* ✅ BOUTONS POUR LES MESSAGES DE JULIE */}
         {isModel && message.text && (
           <div className="flex items-center gap-2 mt-2 px-1 flex-wrap">
             {/* Bouton Écouter */}
