@@ -71,7 +71,7 @@ function App() {
         const firstMessage: ChatMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer, c'est d'accord ?`,
+            text: `Bonjour ! Je suis Julie. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours. Nous sommes en semaine ${currentWeek}. Commençons à pratiquer, c'est d'accord ?`,
         };
         setMessages([firstMessage]);
         setIsLoading(false);
@@ -170,7 +170,7 @@ function App() {
         const welcomeMessage: ChatMessage = {
           id: `model-${Date.now()}`,
           role: 'model',
-          text: `Bonjour ! Je suis l'avatar de Marion. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours.  
+          text: `Bonjour ! Je suis Julie. Mon objectif est de vous aider à pratiquer votre écrit en utilisant ce que vous apprenez en cours.  
           Nous sommes en semaine ${week}. Commençons à pratiquer, c'est d'accord ?`,
         };
         setMessages([welcomeMessage]);
@@ -316,7 +316,7 @@ const handleReportDoubt = (messageId: string) => {
   
   let conversationText = '=== CONVERSATION COMPLÈTE ===\n\n';
   messages.forEach((msg, index) => {
-    const speaker = msg.role === 'model' ? 'Marion' : 'Apprenant';
+    const speaker = msg.role === 'model' ? 'Julie' : 'Apprenant';
     conversationText += `[${index + 1}] ${speaker}:\n${msg.text}\n\n`;
   });
   
@@ -395,7 +395,7 @@ Un apprenant`);
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Mode écrit</h3>
               <p className="text-gray-600 text-center text-sm mb-3">
-                Conversation textuelle avec l'avatar de Marion
+                Conversation textuelle avec Julie
               </p>
               <ul className="text-xs text-gray-500 space-y-1 text-left">
                 <li>✓ Corrections visuelles</li>
@@ -416,7 +416,7 @@ Un apprenant`);
   </div>
   <h3 className="text-xl font-bold text-gray-800 mb-2">Mode oral</h3>
   <p className="text-gray-600 text-center text-sm mb-3">
-    Conversation vocale avec l'avatar de François
+    Conversation vocale avec François
   </p>
   <ul className="text-xs text-gray-500 space-y-1 text-left">
     <li>✓ Interaction en contexte</li>
@@ -574,7 +574,7 @@ if (conversationMode === 'oral') {
       <header className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-           <img src="/avatar.jpg" alt="Marion" className="w-10 h-10 rounded-full shadow-sm object-cover" />
+           <img src="/avatar.jpg" alt="Julie" className="w-10 h-10 rounded-full shadow-sm object-cover" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
             <button 
