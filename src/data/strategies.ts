@@ -103,14 +103,14 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'conjugation',
     errorPattern: 'présent indicatif',
     strategy: 'Présent = terminaisons selon groupe. Groupe 1 (-ER) : e, es, e, ons, ez, ent. Verbes irréguliers : apprendre par cœur.',
-    example: 'Manger : je mange, nous mangeons.'
+    example: 'Partager : je partage, nous partageons.'
   },
   {
     weekNumber: 3,
     errorType: 'conjugation',
     errorPattern: 'verbes -DRE',
-    strategy: 'Verbes en -DRE perdent le D au singulier. Prendre : je prendS, tu prendS, il prendØ.',
-    example: 'Je prends, il prend (sans D).'
+    strategy: 'Au présent: ENTENDRE, APPRENDRE, VENDRE. Prendre : je prendS, tu prendS, il prendØ.',
+    example: 'Je comprends, il comprend.'
   },
   {
     weekNumber: 3,
