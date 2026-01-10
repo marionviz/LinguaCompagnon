@@ -589,12 +589,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
     setIsSpeaking(false);
     console.log('✅ États React réinitialisés');
   };
-    isListeningRef.current = false;
-
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-    }
-  };
 
   const handleEndCall = () => {
     cleanup();
