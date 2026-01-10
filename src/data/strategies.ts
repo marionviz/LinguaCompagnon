@@ -52,8 +52,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 1,
     errorType: 'pronunciation',
     errorPattern: 'chiffres dates',
-    strategy: 'Chiffres : découpage visuel → mille/centaine/dizaine. 1995 = mille-neuf-cent-quatre-vingt-quinze.',
-    example: '2024 = deux-mille-vingt-quatre.'
+    strategy: 'Chiffres : découpage visuel → mille/centaine/dizaine. 1995 = mille neuf cent quatre-vingt-quinze.',
+    example: '2024 = deux mille vingt-quatre.'
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -64,7 +64,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'grammar',
     errorPattern: 'négation',
     strategy: 'Négation encadre le verbe : NE + verbe + PAS/JAMAIS/RIEN/PERSONNE/PLUS/QUE. Au passé composé : NE + auxiliaire + PAS + participe.',
-    example: 'Je ne mange PAS. Je n\'ai JAMAIS mangé.'
+    example: 'Je ne fume PAS. Je n\'ai JAMAIS fumé.'
   },
   {
     weekNumber: 2,
@@ -77,8 +77,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 2,
     errorType: 'conjugation',
     errorPattern: 'futur proche',
-    strategy: 'Futur proche = ALLER + infinitif (action imminente).',
-    example: 'Je VAIS manger (dans 5 minutes).'
+    strategy: 'Futur proche = ALLER + infinitif (action imminente ou programmée).',
+    example: 'Je VAIS manger (dans 5 minutes), il VA finir ses études en juin.'
   },
   {
     weekNumber: 2,
