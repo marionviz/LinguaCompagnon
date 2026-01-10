@@ -350,15 +350,15 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 9,
     errorType: 'grammar',
     errorPattern: 'consolidation quantité',
-    strategy: 'Révision : la majorité DE, un tiers DE, 50% DE. Comparaison : plus DE...QUE.',
-    example: 'La majorité DES gens trient.'
+    strategy: 'DE s\'accorde avec Proportion : la majorité DE, un tiers DE, 50% DE.',
+    example: 'La majorité DES gens trient; un tiers DE LA population.'
   },
   {
     weekNumber: 9,
     errorType: 'pronunciation',
     errorPattern: 'verbes évolution',
     strategy: 'Sons [ɛ] vs [e] : augmenter [ogmɑ̃té], réduire [ʁedɥiʁ], améliorer [ameljɔʁé].',
-    example: 'Augmenter [é], réduire [ui].'
+    example: 'Augmenter [é], J\'augmente [ogmɑ̃t].'
   },
 
   // ═══════════════════════════════════════════════════════════
