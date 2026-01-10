@@ -167,8 +167,14 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'fr-FR';
-      recognition.continuous = true;
+
+      // ✅ FIX MOBILE : continuous false sur mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      recognition.continuous = !isMobile; // false sur mobile, true sur desktop
       recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      
+      console.log(`📱 Mode: ${isMobile ? 'MOBILE' : 'DESKTOP'}, continuous: ${recognition.continuous}`);
 
       let finalTranscript = '';
       let interimTranscript = '';
@@ -525,21 +531,64 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
   // ═══════════════════════════════════════════════════════════
 
   const cleanup = () => {
+    console.log('🧹 Cleanup : arrêt complet de la session');
+    
+    // 1. Stopper reconnaissance vocale
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) {}
+      try { 
+        recognitionRef.current.stop(); 
+        console.log('✅ Reconnaissance vocale stoppée');
+      } catch (e) {
+        console.log('⚠️ Reconnaissance déjà arrêtée');
+      }
       recognitionRef.current = null;
     }
 
+    // 2. Stopper tous les timeouts
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+      console.log('✅ Silence timeout cleared');
     }
 
+    // 3. Stopper audio context
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
       audioContextRef.current = null;
+      console.log('✅ Audio context fermé');
     }
 
-    speechSynthesis.cancel();
+    // 4. Stopper synthèse vocale
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      console.log('✅ Synthèse vocale annulée');
+    }
+    
+    // 5. ✅ FIX : Stopper Gemini Chat
+    if (geminiChatRef.current) {
+      geminiChatRef.current = null;
+      console.log('✅ Gemini Chat supprimé');
+    }
+    
+    // 6. Réinitialiser tous les états refs
+    isListeningRef.current = false;
+    conversationHistoryRef.current = [];
+    lastTranscriptRef.current = '';
+    noSpeechCountRef.current = 0;
+    console.log('✅ États refs réinitialisés');
+
+    // 7. Stopper timer
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+      console.log('✅ Timer stoppé');
+    }
+    
+    // 8. ✅ FIX : Forcer arrêt états React
+    setConnectionState(ConnectionState.DISCONNECTED);
+    setIsSpeaking(false);
+    console.log('✅ États React réinitialisés');
+  };
     isListeningRef.current = false;
 
     if (timerIntervalRef.current) {
