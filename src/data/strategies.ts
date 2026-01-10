@@ -396,7 +396,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 10,
     errorType: 'pronunciation',
     errorPattern: 'pronoms possessifs',
-    strategy: 'Distinction [jɛ̃] vs [tjɛ̃] : le mien [mjɛ̃], le tien [tjɛ̃], le sien [sjɛ̃].',
+    strategy: 'Prononciation [jɛ̃] : le mien [mjɛ̃], le tien [tjɛ̃], le sien [sjɛ̃].',
     example: 'Le mien [mjɛ̃], le tien [tjɛ̃].'
   },
 
@@ -415,7 +415,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'conjugation',
     errorPattern: 'révision temps',
     strategy: 'Révision temps : présent (habitudes), passé composé (actions), imparfait (description), futur proche (intention), subjonctif (sentiment).',
-    example: 'Je mange (présent). J\'ai mangé (PC). Je mangeais (imp).'
+    example: 'Je pense (présent). J\'ai pensé (PC). Je pensais (imp).'
   },
   {
     weekNumber: 11,
@@ -428,7 +428,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 11,
     errorType: 'pronunciation',
     errorPattern: 'révision phonétique',
-    strategy: 'Révision sons : nasales ([ɑ̃], [ɔ̃], [ɛ̃]), liaisons (obligatoires, interdites, facultatives), distinction [e]/[ɛ].',
+    strategy: 'Révision sons : nasales ([ɑ̃], [ɔ̃], [ɛ̃]), liaisons (obligatoires, interdites), distinction [e]/[ɛ].',
     example: 'Travailler les sons problématiques identifiés.'
   }
 ];
