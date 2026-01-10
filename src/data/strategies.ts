@@ -272,7 +272,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 7,
     errorType: 'vocabulary',
     errorPattern: 'préfixes antonymes',
-    strategy: 'Préfixes négatifs : IN- (inefficace), DÉ- (déstabilisé), MAL- (malhonnête), IM- devant P/B (impossible).',
+    strategy: 'Préfixes négatifs : IN- (inefficace), DÉ- (déstabilisé), MAL- (malhonnête), IM- devant P/B/M (impossible).',
     example: 'Efficace → INefficace. Honnête → MALhonnête.'
   },
   {
@@ -286,8 +286,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 7,
     errorType: 'pronunciation',
     errorPattern: 'droits enfance',
-    strategy: 'Liaisons dans "droits_et devoirs", "protection_et égalité". Nasale "enfant" [ɑ̃fɑ̃].',
-    example: 'Les droits [dʁwa] et [e] devoirs.'
+    strategy: 'Nasale: droits [dʁwa], "enfant" [ɑ̃fɑ̃].',
+    example: 'Les droits [dʁwa] et [e] devoirs pour les enfants [ɑ̃fɑ̃].'
   },
 
   // ═══════════════════════════════════════════════════════════
