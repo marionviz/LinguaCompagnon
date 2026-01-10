@@ -298,7 +298,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'grammar',
     errorPattern: 'expression but',
     strategy: 'But = POUR/AFIN DE + infinitif (même sujet). POUR QUE/AFIN QUE + subjonctif (sujets différents).',
-    example: 'Je recycle POUR protéger. Je recycle POUR QUE la planète soit propre.'
+    example: 'Je recycle POUR protéger la planète. Je recycle POUR QUE la planète soit propre.'
   },
   {
     weekNumber: 8,
