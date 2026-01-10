@@ -176,8 +176,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 4,
     errorType: 'pronunciation',
     errorPattern: 'expressions sentiments',
-    strategy: 'Liaisons interdites : "C\'est génial [ʒenjal], QUE [kə]". Pas de liaison avant QUE.',
-    example: 'C\'est génial QUE tu viennes.'
+    strategy: 'Différenciation du masculin et féminin : heureux/heureuse, content/contente.',
+    example: 'Je suis contentE de te voir (Je = une femme).'
   },
 
   // ═══════════════════════════════════════════════════════════
