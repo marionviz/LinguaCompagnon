@@ -226,8 +226,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 6,
     errorType: 'conjugation',
     errorPattern: 'conditionnel politesse',
-    strategy: 'Conditionnel de politesse = infinitif + terminaisons -ais, -ais, -ait, -ions, -iez, -aient. Verbes irréguliers : mémoriser.',
-    example: 'Je voudrais (vouloir), tu pourrais (pouvoir).'
+    strategy: 'Conditionnel de politesse = infinitif + terminaisons -ais, -ais, -ait, -ions, -iez, -aient. Verbes irréguliers : à mémoriser.',
+    example: 'Je voudrais (vouloir), tu pourrais (pouvoir), J\'aimerais (aimer).'
   },
   {
     weekNumber: 6,
@@ -247,7 +247,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 6,
     errorType: 'pronunciation',
     errorPattern: 'conditionnel',
-    strategy: 'Conditionnel = son [ʁɛ] à la fin. "Je voudrais" [vudʁɛ], pas [vudʁa].',
+    strategy: 'Conditionnel = son [ʁɛ] à la fin. On dit : "Je voudrais" [vudʁɛ], pas [vudʁa].',
     example: 'Je voudrais [vudʁɛ], tu pourrais [puʁɛ].'
   },
 
