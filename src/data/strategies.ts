@@ -215,7 +215,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 5,
     errorType: 'pronunciation',
     errorPattern: 'expressions peur doute',
-    strategy: 'Nasale dans "craindre" [kʁɛ̃dʁ], "peur" [pœʁ]. Éviter [kʁɛndʁə].',
+    strategy: 'Nasale dans "craindre" [kʁɛ̃dʁ], "peur" [pœʁ].',
     example: 'J\'ai peur [pœʁ], je crains [kʁɛ̃].'
   },
 
