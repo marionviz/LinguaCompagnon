@@ -37,6 +37,7 @@ const getWeekContent = (week: number): string => {
 **Grammaire :**
 - Le présent de l'indicatif (révision approfondie des verbes réguliers et irréguliers).
 - Les verbes en -DRE, -TRE, -OIR, -OIRE.
+- Pas d'article devant le nom d'une profession : je suis avocate, je suis professeur...
 **Objectif de la conversation :** Menez une conversation où l'apprenant décrit sa profession et ses tâches. Discutez des avantages et des inconvénients du télétravail ou de la semaine de 4 jours, en veillant à l'utilisation correcte du présent.
 `;
     case 4:
