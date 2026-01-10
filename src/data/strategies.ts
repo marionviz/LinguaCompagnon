@@ -117,7 +117,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'conjugation',
     errorPattern: 'verbes -OIR',
     strategy: 'Verbes en -OIR sont irréguliers. Mémoriser : POUVOIR, VOULOIR, DEVOIR, VOIR, SAVOIR.',
-    example: 'Je peux, tu veux, il doit, je vois.'
+    example: 'Je peux, tu veux, il doit, je vois, ils savent.'
   },
   {
     weekNumber: 3,
@@ -130,8 +130,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 3,
     errorType: 'pronunciation',
     errorPattern: 'monde professionnel',
-    strategy: 'Nasales : entreprise [ɑ̃tʁəpʁiz], réunion [ʁeynjɔ̃]. Éviter de prononcer le N.',
-    example: 'RéuniON [ʁeynjɔ̃], pas [ʁeynjon].'
+    strategy: 'Nasales : entreprise [ɑ̃tʁəpʁiz], réunion [ʁeynjɔ̃]. Ne pas prononcer le N.',
+    example: 'On dit : RéuniON [ʁeynjɔ̃], pas [ʁeynjon].'
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -143,6 +143,13 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorPattern: 'subjonctif présent',
     strategy: 'Subjonctif après expressions de sentiment/opinion : que + subjonctif. Base : ILS au présent + terminaisons -e, -es, -e, -ions, -iez, -ent.',
     example: 'Je suis content QUE tu viennes (venir).'
+  },
+  {
+    weekNumber: 4,
+    errorType: 'grammar',
+    errorPattern: 'subjonctif infinitif',
+    strategy: 'RÈGLE : 1 sujet → DE + infinitif. 2 sujets différents → QUE + subjonctif.',
+    example: 'Je suis heureux de vivre à Genève (1 sujet). Je suis heureux QUE TU VIVES à Genève (2 sujets).'
   },
   {
     weekNumber: 4,
@@ -162,7 +169,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 4,
     errorType: 'vocabulary',
     errorPattern: 'abréviations SMS',
-    strategy: 'SMS courants : MDR (mort de rire), STP (s\'il te plaît), BCP (beaucoup), RDV (rendez-vous), TKT (t\'inquiète pas).',
+    strategy: 'SMS courants : MDR (mort de rire), STP (s\'il te plaît), BCP (beaucoup), RV (rendez-vous), TKT (t\'inquiète pas).',
     example: 'Tu viens au rdv ? Oui, tkt !'
   },
   {
@@ -181,7 +188,7 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorType: 'grammar',
     errorPattern: 'subjonctif infinitif',
     strategy: 'RÈGLE : 1 sujet → DE + infinitif. 2 sujets différents → QUE + subjonctif.',
-    example: 'Je veux PARTIR (1 sujet). Je veux QUE tu partes (2 sujets).'
+    example: 'Je veux VENIR avec toi (1 sujet). Je veux QUE tu VIENNES avec moi (2 sujets).'
   },
   {
     weekNumber: 5,
