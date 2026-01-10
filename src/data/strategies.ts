@@ -100,6 +100,13 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
   // ═══════════════════════════════════════════════════════════
   {
     weekNumber: 3,
+    errorType: 'grammar',
+    errorPattern: 'article',
+    strategy: 'Pas d\'article devant la profession : être + métier',
+    example: 'Je suis informaticien. Je vais devenir responsable de la sécurité'
+  },
+  {
+    weekNumber: 3,
     errorType: 'conjugation',
     errorPattern: 'présent indicatif',
     strategy: 'Présent = terminaisons selon groupe. Groupe 1 (-ER) : e, es, e, ons, ez, ent. Verbes irréguliers : apprendre par cœur.',
