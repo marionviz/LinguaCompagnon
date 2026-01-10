@@ -91,8 +91,8 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 2,
     errorType: 'pronunciation',
     errorPattern: 'expressions contact',
-    strategy: 'Liaisons obligatoires : "Ça fait_longtemps", "On_reste en contact". Prononciation "excusez" = [ɛkskyzé].',
-    example: 'Ça fait [fɛ] longtemps !'
+    strategy: 'Liaisons obligatoires : "Vous_appelez", "Vous_êtes". Prononciation "excusez" = [ɛkskyzé].',
+    example: 'Nous_avons rendez-vous!'
   },
 
   // ═══════════════════════════════════════════════════════════
