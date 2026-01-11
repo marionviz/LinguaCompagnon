@@ -41,6 +41,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const conversationHistoryRef = useRef<string[]>([]);
   const noSpeechCountRef = useRef<number>(0);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobileRef = useRef<boolean>(false); // ✅ FIX MOBILE
 
   // ═══════════════════════════════════════════════════════════
   // TIMER
@@ -168,9 +169,9 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'fr-FR';
-
       // ✅ FIX MOBILE : continuous false sur mobile
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      isMobileRef.current = isMobile; // ✅ Stocker dans ref pour onend
       recognition.continuous = !isMobile; // false sur mobile, true sur desktop
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
@@ -250,6 +251,21 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       recognition.onend = () => {
         console.log('🎤 Écoute terminée');
         isListeningRef.current = false;
+        
+        // ✅ FIX MOBILE : Relancer automatiquement sur mobile
+        if (isMobileRef.current && !isSpeaking && connectionState === ConnectionState.CONNECTED) {
+          console.log('📱 Mobile : Relance automatique dans 300ms');
+          setTimeout(() => {
+            if (!isSpeaking && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+                console.log('✅ Reconnaissance relancée (mobile)');
+              } catch (e) {
+                console.log('⚠️ Erreur relance:', e);
+              }
+            }
+          }, 300); // Petit délai pour éviter erreurs
+        }
       };
 
       recognitionRef.current = recognition;
