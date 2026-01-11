@@ -76,6 +76,7 @@ const getWeekContent = (week: number): string => {
 - Le voisinage : un voisin, prêter, rendre service.
 **Grammaire :**
 - Le conditionnel de politesse ("je voudrais", "tu pourrais", "j'aimerais").
+- Les prépositions : avoir besoin DE + nom/verbe infinitif. inviter À + verbe infinitif. proposer DE + verbe infinitif.
 - Le pronom "en" (pour remplacer une quantité ou "de + nom").
 **Objectif de la conversation :** Créez une mise en situation. L'apprenant est dans un nouvel appartement et doit demander de l'aide à son voisin (vous). Encouragez l'utilisation du conditionnel de politesse. Ensuite, posez des questions pour pratiquer le pronom "en" ("Vous avez des outils ? Oui, j'en ai quelques-uns.").
 `;

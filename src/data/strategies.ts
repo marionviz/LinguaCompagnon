@@ -229,12 +229,12 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
   // ═══════════════════════════════════════════════════════════
   // SEMAINE 6 : DEMANDER ET OFFRIR DE L'AIDE
   // ═══════════════════════════════════════════════════════════
-  {
+   {
     weekNumber: 6,
-    errorType: 'conjugation',
-    errorPattern: 'conditionnel politesse',
-    strategy: 'Conditionnel de politesse = infinitif + terminaisons -ais, -ais, -ait, -ions, -iez, -aient. Verbes irréguliers : à mémoriser.',
-    example: 'Je voudrais (vouloir), tu pourrais (pouvoir), J\'aimerais (aimer).'
+    errorType: 'grammar',
+    errorPattern: 'prépositions',
+    strategy: 'avoir besoin DE + nom/verbe infinitif. inviter À + verbe infinitif. proposer DE + verbe infinitif',
+    example: 'J\'ai besoin D\'aide. Je vous propose DE venir vous aider demain'
   },
   {
     weekNumber: 6,
@@ -242,6 +242,13 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     errorPattern: 'pronom en',
     strategy: 'Pronom EN remplace DE + nom (quantité, origine). Placé AVANT le verbe.',
     example: 'Tu as des outils ? Oui, j\'EN ai.'
+  },
+   {
+    weekNumber: 6,
+    errorType: 'conjugation',
+    errorPattern: 'conditionnel politesse',
+    strategy: 'Conditionnel de politesse = infinitif + terminaisons -ais, -ais, -ait, -ions, -iez, -aient. Verbes irréguliers : à mémoriser.',
+    example: 'Je voudrais (vouloir), tu pourrais (pouvoir), J\'aimerais (aimer).'
   },
   {
     weekNumber: 6,
