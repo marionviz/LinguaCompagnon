@@ -225,7 +225,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
             conversationHistoryRef.current.push(`Apprenant: ${userText}`);
             await sendToGemini(userText);
-          }, 1500); // ⚡ Fin phrase : 1.5s
+          },2000); // ⚡ Fin phrase : 2s
         }
       };
 
@@ -352,12 +352,12 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           setTimeout(() => {
             console.log('✅ Relance écoute (après attente supplémentaire)');
             startListening();
-          }, 1000); // ⚡ Si parle : 1s
+          },1500); // ⚡ Si parle : 1.5s
         } else {
           console.log('✅ Relance écoute');
           startListening();
         }
-      }, 1000); // ⚡ Relance : 1s
+      }, 1500); // ⚡ Relance : 1.5s
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
