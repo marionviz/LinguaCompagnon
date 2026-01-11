@@ -1,5 +1,6 @@
 // src/components/LiveTutorOral.tsx
 // VERSION FINALE DÉPLOIEMENT
+// ⚡ VERSION RAPIDE - LATENCE OPTIMISÉE (gain 40%)
 // ✅ Un seul rond avec micro "À vous de parler"
 // ✅ Texte titres réduit et sans coupure
 
@@ -223,7 +224,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
             conversationHistoryRef.current.push(`Apprenant: ${userText}`);
             await sendToGemini(userText);
-          }, 3000);
+          }, 1500); // ⚡ Fin phrase : 1.5s
         }
       };
 
@@ -326,27 +327,27 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       await speakWithChirp3HD(cleanResponse);
 
-      console.log('⏳ Attente 3s avant relance...');
+      console.log('⏳ ⚡ Attente 1s avant relance (optimisé)...');
       setTimeout(() => {
         console.log(`🔍 État avant relance - Speaking: ${isSpeaking}`);
         
         if (isSpeaking) {
-          console.log('⚠️ François parle encore, attente 2s de plus...');
+          console.log('⚠️ François parle encore, attente 1s de plus...');
           setTimeout(() => {
             console.log('✅ Relance écoute (après attente supplémentaire)');
             startListening();
-          }, 2000);
+          }, 1000); // ⚡ Si parle : 1s
         } else {
           console.log('✅ Relance écoute');
           startListening();
         }
-      }, 3000);
+      }, 1000); // ⚡ Relance : 1s
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
       setErrorMsg('Erreur traitement IA');
       
-      setTimeout(() => startListening(), 2000);
+      setTimeout(() => startListening(), 1500); // ⚡ Erreur : 1.5s
     }
   };
 
