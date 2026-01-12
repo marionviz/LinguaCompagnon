@@ -50,7 +50,7 @@ const getWeekContent = (week: number): string => {
 - Expressions de sentiments : "C'est génial que...", "Dommage que...", "Je suis surpris que...".
 **Grammaire :**
 - Le subjonctif présent après les expressions de sentiments et d'opinion.
-- Règle : 1 même sujet -> verbe + de + infinitif. 2 sujets différents -> verbe + que + subjonctif.
+- Règle : 1 même sujet -> verbe + de + infinitif. 2 sujets différents -> verbe + que + subjonctif. INTERDIT de mettre le subjonctif si un seul même sujet dans la phrase.
 - Distinction entre le vouvoiement (formel) et le tutoiement (informel).
 **Objectif de la conversation :** Proposez un jeu de rôle où l'apprenant doit annoncer une nouvelle (ex: il a eu une promotion) et doit réagir à une nouvelle que vous annoncez. Il doit utiliser des structures qui demandent le subjonctif.
 `;
@@ -64,6 +64,7 @@ const getWeekContent = (week: number): string => {
 **Grammaire :**
 - Consolidation de l'utilisation du subjonctif ou de l'infinitif après les verbes de sentiment, de volonté et de doute.
 - Règle : 1 même sujet -> verbe + de + infinitif. 2 sujets différents -> verbe + que + subjonctif.
+- INTERDIT de mettre le subjonctif si un seul même sujet dans la phrase.
 **Objectif de la conversation :** Discutez des aspirations professionnelles ou personnelles de l'apprenant. Posez des questions comme "Qu'est-ce que vous aimeriez faire dans 5 ans ?" ou "Y a-t-il quelque chose que vous craignez ?". Corrigez l'emploi du subjonctif/infinitif.
 `;
     case 6:
@@ -102,6 +103,7 @@ const getWeekContent = (week: number): string => {
 - L'environnement : déchets, recyclage, traitement, biodiversité, espèce menacée.
 **Grammaire :**
 - L'expression du but : pour, pour que (+ subjonctif), afin de, afin que (+ subjonctif).
+- INTERDIT de mettre le subjonctif avec "pour que/afin que" si un seul même sujet dans la phrase.
 - L'expression de la quantité et de la proportion : la moitié de, un tiers de, la majorité de, 25% de.
 - Comparer des données : plus/moins de... que, deux fois plus de... que.
 **Objectif de la conversation :** Lancez un débat sur une initiative locale (ex: le recyclage). L'apprenant doit expliquer le but de l'initiative en utilisant les différentes expressions du but. Il doit aussi utiliser les expressions de quantité pour décrire des données (ex: "La majorité des déchets sont alimentaires.").
@@ -126,6 +128,7 @@ const getWeekContent = (week: number): string => {
 - La nominalisation : transformer des verbes en noms (ex: décider -> la décision, construire -> la construction).
 - Exprimer son opinion : Je pense que, à mon avis, je suis d'accord avec...
 **Grammaire :**
+- INTERDIT de mettre le subjonctif avec "pour que/afin que" si un seul même sujet dans la phrase.
 - Les pronoms possessifs : le mien, la tienne, les nôtres, les vôtres, etc.
 - Expressions simples de cause et conséquence : parce que, donc, grâce à, c'est pourquoi.
 **Objectif de la conversation :** Présentez deux projets fictifs à l'apprenant (ex: un projet de recyclage et un projet de jardin communautaire). Il doit comparer les deux, donner son avis, et expliquer son choix ("Je préfère ton projet, le mien est moins ambitieux.") en utilisant les pronoms possessifs et des expressions de cause/conséquence.

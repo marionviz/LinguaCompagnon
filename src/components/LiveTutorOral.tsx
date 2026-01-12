@@ -845,12 +845,12 @@ Cordialement`);
                     </svg>
                   ) : (
                     // Icône micro
-                    <svg className="w-20 h-20 text-white mb-2" fill="currentColor" viewBox="0 0 24 24">
+                     <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                       <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                     </svg>
                   )}
-                  <div className="text-xs text-white font-semibold">
+                  <div className="text-xs text-white font-semibold mt-2">
                     {isSpeaking ? 'François...' : isListeningRef.current ? 'ÉCOUTE' : 'APPUYEZ'}
                   </div>
                 </button>
@@ -863,7 +863,7 @@ Cordialement`);
                   {isSpeaking 
                     ? 'François parle...' 
                     : isListeningRef.current 
-                    ? '🎤 Parlez maintenant !' 
+                    ? 'Parlez maintenant !' 
                     : 'Appuyez une fois pour parler'}
                 </div>
                 
