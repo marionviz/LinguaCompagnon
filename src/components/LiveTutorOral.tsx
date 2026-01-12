@@ -1,8 +1,7 @@
 // src/components/LiveTutorOral.tsx
-// VERSION FINALE DÉPLOIEMENT
-// ⚡ VERSION RAPIDE - LATENCE OPTIMISÉE (gain 40%)
-// ✅ Un seul rond avec micro "À vous de parler"
-// ✅ Texte titres réduit et sans coupure
+// VERSION PUSH-TO-TALK MOBILE - CORRECTION COMPLÈTE
+// ✅ Push-to-talk mobile sans bug
+// ✅ Mode automatique desktop préservé
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -30,18 +29,15 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const [showToolbox, setShowToolbox] = useState(false);
   const [showToolboxNotification, setShowToolboxNotification] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false); // ✅ État React pour UI
 
   // Refs
   const recognitionRef = useRef<any>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const geminiChatRef = useRef<any>(null);
-  const isListeningRef = useRef(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastTranscriptRef = useRef<string>('');
   const conversationHistoryRef = useRef<string[]>([]);
-  const noSpeechCountRef = useRef<number>(0);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isMobileRef = useRef<boolean>(false); // ✅ FIX MOBILE
+  const isMobileRef = useRef<boolean>(false);
+  const isProcessingRef = useRef<boolean>(false);
 
   // ═══════════════════════════════════════════════════════════
   // TIMER
@@ -152,8 +148,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
   };
 
   // ═══════════════════════════════════════════════════════════
-  // ═══════════════════════════════════════════════════════════
-  // INITIALISATION RECONNAISSANCE VOCALE - UNE SEULE FOIS
+  // INITIALISATION RECONNAISSANCE VOCALE
   // ═══════════════════════════════════════════════════════════
   
   useEffect(() => {
@@ -182,35 +177,28 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       recognition.interimResults = false;
       console.log('📱 Config MOBILE: continuous=false, interimResults=false');
     } else {
-      // DESKTOP: Mode automatique (COMME AVANT)
+      // DESKTOP: Mode automatique
       recognition.continuous = true;
       recognition.interimResults = true;
       console.log('💻 Config DESKTOP: continuous=true, interimResults=true');
     }
 
-    let finalTranscript = '';
-    let interimTranscript = '';
-
     recognition.onstart = () => {
       console.log('🎤 Écoute démarrée');
-      isListeningRef.current = true;
+      setIsListening(true);
     };
 
     recognition.onresult = (event: any) => {
       if (isMobile) {
-        // MOBILE: Prendre résultat final directement
-        const transcript = event.results[0][0].transcript.trim();
-        console.log('📝 MOBILE Transcription:', transcript);
-        
-        if (transcript.length >= 3 && transcript !== lastTranscriptRef.current) {
-          lastTranscriptRef.current = transcript;
-          conversationHistoryRef.current.push(`Apprenant: ${transcript}`);
-          sendToGemini(transcript);
-        }
+        // MOBILE: Résultat final direct
+        const transcript = event.results[0][0].transcript;
+        console.log('📱 Transcript mobile:', transcript);
+        handleUserSpeech(transcript);
       } else {
-        // DESKTOP: Mode continu avec timeout (COMME AVANT)
-        interimTranscript = '';
-        
+        // DESKTOP: Gestion interim + final
+        let finalTranscript = '';
+        let interimTranscript = '';
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
@@ -220,74 +208,39 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           }
         }
 
-        if (silenceTimeoutRef.current) {
-          clearTimeout(silenceTimeoutRef.current);
-        }
-
-        if (finalTranscript.trim().length > 0) {
-          silenceTimeoutRef.current = setTimeout(() => {
-            const userText = finalTranscript.trim();
-            console.log('📝 DESKTOP Transcription finale:', userText);
-            
-            finalTranscript = '';
-            
-            if (userText === lastTranscriptRef.current || userText.length < 3) {
-              console.log('⚠️ Transcription ignorée');
-              return;
-            }
-
-            lastTranscriptRef.current = userText;
-            
-            if (recognitionRef.current) {
-              recognitionRef.current.stop();
-            }
-            isListeningRef.current = false;
-
-            conversationHistoryRef.current.push(`Apprenant: ${userText}`);
-            sendToGemini(userText);
-          }, 1500); // ⚡ 1.5s timeout (COMME AVANT)
+        if (finalTranscript.trim()) {
+          console.log('💻 Transcript desktop:', finalTranscript);
+          handleUserSpeech(finalTranscript.trim());
         }
       }
     };
 
     recognition.onerror = (event: any) => {
       console.error('❌ Erreur reconnaissance:', event.error);
-      isListeningRef.current = false;
+      setIsListening(false);
       
       if (event.error === 'not-allowed') {
-        setErrorMsg('Microphone refusé. Autorisez le micro dans les paramètres.');
+        setErrorMsg('Accès au microphone refusé. Autorisez le microphone dans votre navigateur.');
       } else if (event.error === 'no-speech') {
-        console.log('⚠️ Pas de voix détectée');
-        // DESKTOP: Relancer auto
-        if (!isMobile && recognitionRef.current) {
-          setTimeout(() => {
-            try {
-              recognitionRef.current.start();
-              console.log('✅ Relance après no-speech (desktop)');
-            } catch (e) {
-              console.log('Relance échouée');
-            }
-          }, 500);
+        // Sur mobile, arrêter proprement
+        if (isMobile) {
+          setIsListening(false);
+        } else {
+          // Sur desktop, relancer
+          if (connectionState === ConnectionState.CONNECTED) {
+            setTimeout(() => startListening(), 1000);
+          }
         }
       }
     };
 
     recognition.onend = () => {
       console.log('🎤 Écoute terminée');
-      isListeningRef.current = false;
+      setIsListening(false);
       
-      // DESKTOP ONLY: Relancer automatiquement (COMME AVANT)
-      if (!isMobile && !isSpeaking && connectionState === ConnectionState.CONNECTED) {
-        setTimeout(() => {
-          try {
-            if (recognitionRef.current && !isSpeaking) {
-              recognitionRef.current.start();
-              console.log('✅ Relance auto (desktop)');
-            }
-          } catch (e) {
-            console.log('Relance échouée');
-          }
-        }, 500);
+      // Sur desktop, relancer automatiquement
+      if (!isMobile && connectionState === ConnectionState.CONNECTED && !isProcessingRef.current) {
+        setTimeout(() => startListening(), 500);
       }
     };
 
@@ -297,458 +250,224 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-      }
+      window.speechSynthesis.cancel();
     };
-  }, [isSpeaking, connectionState]);
+  }, [connectionState]);
 
   // ═══════════════════════════════════════════════════════════
-  // DÉMARRAGE ÉCOUTE (DESKTOP AUTO / MOBILE MANUEL)
+  // FONCTIONS RECONNAISSANCE VOCALE
   // ═══════════════════════════════════════════════════════════
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current) {
-      console.log('❌ Reconnaissance non initialisée');
-      return;
-    }
-
-    if (isListeningRef.current) {
-      console.log('⏸️ Écoute déjà active');
-      return;
-    }
-
-    if (isSpeaking) {
-      console.log('⏸️ François parle, attendre...');
+    if (!recognitionRef.current || isProcessingRef.current || isSpeaking) {
+      console.log('⏭️ Skip startListening: isProcessing=', isProcessingRef.current, 'isSpeaking=', isSpeaking);
       return;
     }
 
     try {
       recognitionRef.current.start();
-      console.log('✅ Écoute démarrée manuellement');
-    } catch (err: any) {
-      // Si déjà démarrée, c'est OK
-      if (err.message && err.message.includes('already started')) {
-        console.log('ℹ️ Déjà démarrée');
-        isListeningRef.current = true;
-      } else {
-        console.error('❌ Erreur démarrage:', err);
+      console.log('✅ Recognition.start() appelé');
+    } catch (err) {
+      console.error('❌ Erreur start():', err);
+    }
+  }, [isSpeaking]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        console.log('✅ Recognition.stop() appelé');
+      } catch (err) {
+        console.error('❌ Erreur stop():', err);
       }
     }
-  }, [isSpeaking]);
+  }, [isListening]);
 
-          console.log('📱 Mobile : Relance automatique dans 300ms');
-          setTimeout(() => {
-            if (!isSpeaking && recognitionRef.current) {
-              try {
-                recognitionRef.current.start();
-                console.log('✅ Reconnaissance relancée (mobile)');
-              } catch (e) {
-                console.log('⚠️ Erreur relance:', e);
-              }
-            }
-          }, 300); // Petit délai pour éviter erreurs
-        }
-      };
+  // ═══════════════════════════════════════════════════════════
+  // TRAITEMENT PAROLE UTILISATEUR
+  // ═══════════════════════════════════════════════════════════
 
-      recognitionRef.current = recognition;
-      recognition.start();
-
-    } catch (err: any) {
-      console.error('❌ Erreur démarrage reconnaissance:', err);
-      setErrorMsg('Microphone non accessible');
-      setConnectionState(ConnectionState.ERROR);
+  const handleUserSpeech = async (userText: string) => {
+    if (!userText.trim() || !geminiChatRef.current || isProcessingRef.current) {
+      console.log('⏭️ Skip handleUserSpeech');
+      return;
     }
-  }, [isSpeaking]);
+
+    isProcessingRef.current = true;
+    stopListening();
+
+    console.log('👤 User:', userText);
+    conversationHistoryRef.current.push(`User: ${userText}`);
+
+    try {
+      const result = await geminiChatRef.current.sendMessage(userText);
+      const rawResponse = result.response.text();
+      
+      console.log('🤖 Raw response:', rawResponse);
+
+      // Extraire corrections
+      const corrections = extractCorrections(rawResponse);
+      if (corrections.length > 0) {
+        setAllCorrections(prev => [...prev, ...corrections]);
+      }
+
+      // Nettoyer réponse
+      let cleanedResponse = rawResponse.replace(/\[CORRECTION\][\s\S]*?\[\/CORRECTION\]/g, '').trim();
+      
+      console.log('🤖 François:', cleanedResponse);
+      conversationHistoryRef.current.push(`François: ${cleanedResponse}`);
+
+      // Parler
+      await speakText(cleanedResponse);
+
+      // Relancer écoute après synthèse vocale
+      if (connectionState === ConnectionState.CONNECTED) {
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          startListening();
+        }, 500);
+      } else {
+        isProcessingRef.current = false;
+      }
+
+    } catch (err) {
+      console.error('❌ Erreur Gemini:', err);
+      setErrorMsg('Erreur lors de la génération de la réponse.');
+      isProcessingRef.current = false;
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════
-  // PARSER DE CORRECTIONS RENFORCÉ
+  // EXTRACTION CORRECTIONS
   // ═══════════════════════════════════════════════════════════
 
-  const parseCorrections = (responseText: string): Correction[] => {
+  const extractCorrections = (text: string): Correction[] => {
     const corrections: Correction[] = [];
-    
-    const correctionRegex = /\[CORRECTION\]([\s\S]*?)\[\/CORRECTION\]/g;
+    const regex = /\[CORRECTION\]([\s\S]*?)\[\/CORRECTION\]/g;
     let match;
-    
-    while ((match = correctionRegex.exec(responseText)) !== null) {
+
+    while ((match = regex.exec(text)) !== null) {
       const block = match[1];
       
-      const erreurMatch = block.match(/Erreur\s*:\s*(.+?)(?:\n|$)/);
-      const correctMatch = block.match(/Correct\s*:\s*(.+?)(?:\n|$)/);
-      const typeMatch = block.match(/Type\s*:\s*(.+?)(?:\n|$)/);
-      const explanationMatch = block.match(/Explication\s*:\s*(.+?)(?:\n|$)/);
-      
-      if (erreurMatch && correctMatch && explanationMatch) {
+      const erreurMatch = block.match(/Erreur\s*:\s*(.+?)(?=\n|Correct)/i);
+      const correctMatch = block.match(/Correct\s*:\s*(.+?)(?=\n|Type)/i);
+      const typeMatch = block.match(/Type\s*:\s*(.+?)(?=\n|Explication)/i);
+      const explanationMatch = block.match(/Explication\s*:\s*(.+?)$/i);
+
+      if (erreurMatch && correctMatch && typeMatch && explanationMatch) {
         corrections.push({
           originalSentence: erreurMatch[1].trim(),
           correctedSentence: correctMatch[1].trim(),
+          errorType: typeMatch[1].trim(),
           explanation: explanationMatch[1].trim(),
-          errorType: typeMatch ? typeMatch[1].trim() as any : 'grammar',
         });
       }
     }
-    
-    console.log('🔍 Corrections parsées:', corrections);
+
     return corrections;
   };
 
   // ═══════════════════════════════════════════════════════════
-  // GEMINI CHAT
+  // SYNTHÈSE VOCALE
   // ═══════════════════════════════════════════════════════════
 
-  const sendToGemini = async (userText: string) => {
-    try {
-      if (!geminiChatRef.current) {
-        throw new Error('Gemini non initialisé');
-      }
-
-      console.log('🔄 Envoi à Gemini...');
-
-      const history = conversationHistoryRef.current.slice(-6).join('\n');
-      const contextPrompt = history ? `Historique récent:\n${history}\n\nApprenant: "${userText}"` : userText;
-
-      const result = await geminiChatRef.current.sendMessage(contextPrompt);
-      const responseText = result.response.text();
+  const speakText = (text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      window.speechSynthesis.cancel();
       
-      console.log('✅ Réponse Gemini:', responseText);
-
-      const cleanResponse = responseText.replace(/\[CORRECTION\][\s\S]*?\[\/CORRECTION\]/g, '').trim();
-      conversationHistoryRef.current.push(`François: ${cleanResponse}`);
-
-      const corrections = parseCorrections(responseText);
-      
-      if (corrections.length > 0) {
-        console.log('📝 Corrections trouvées:', corrections);
-        setAllCorrections(prev => [...prev, ...corrections]);
-        saveCorrectionsToToolBox(corrections);
-      }
-
-      await speakWithChirp3HD(cleanResponse);
-
-
-      // ✅ DESKTOP ONLY : Relancer écoute automatique
-      if (!isMobileRef.current) {
-        console.log('⏳ ⚡ Attente 1s avant relance (DESKTOP)...');
-        setTimeout(() => {
-          console.log(`🔍 État avant relance - Speaking: ${isSpeaking}`);
-          
-          if (isSpeaking) {
-            console.log('⚠️ François parle encore, attente 1s de plus...');
-            setTimeout(() => {
-              console.log('✅ Relance écoute (après attente supplémentaire)');
-              startListening();
-            }, 1500); // ⚡ Si parle : 1.5s
-          } else {
-            console.log('✅ Relance écoute');
-            startListening();
-          }
-        }, 1500); // ⚡ Relance : 1.5s
-      } else {
-        console.log('📱 MOBILE : Attendez que François finisse puis appuyez pour parler');
-      }
-
-    } catch (err: any) {
-      console.error('❌ Erreur Gemini:', err);
-      setErrorMsg('Erreur traitement IA');
-      
-      setTimeout(() => startListening(), 1500); // ⚡ Erreur : 1.5s
-    }
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // CHIRP 3 HD TEXT-TO-SPEECH
-  // ═══════════════════════════════════════════════════════════
-
-  const speakWithChirp3HD = async (text: string) => {
-    try {
-      setIsSpeaking(true);
-      console.log('🔊 Synthèse Chirp 3 HD...');
-
-      const apiKey = import.meta.env.VITE_API_KEY;
-      
-      const response = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            input: { text },
-            voice: {
-              languageCode: 'fr-FR',
-              name: 'fr-FR-Chirp3-HD-Charon'
-            },
-            audioConfig: {
-              audioEncoding: 'MP3',
-              speakingRate: 1.0
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Erreur Chirp 3 HD:', errorData);
-        throw new Error(`Chirp 3 HD error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      await playAudioBase64(data.audioContent);
-
-      console.log('✅ Audio Chirp 3 HD joué');
-      setIsSpeaking(false);
-
-    } catch (err: any) {
-      console.error('❌ Erreur Chirp 3 HD:', err);
-      setIsSpeaking(false);
-      await speakWithBrowserTTS(text);
-    }
-  };
-
-  const speakWithBrowserTTS = async (text: string) => {
-    return new Promise<void>((resolve) => {
-      setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
+      const cleanText = text.replace(/\*\*/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'fr-FR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
 
+      const voices = window.speechSynthesis.getVoices();
+      const frenchVoice = voices.find(v => v.lang === 'fr-FR') || voices[0];
+      if (frenchVoice) utterance.voice = frenchVoice;
+
+      utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
         setIsSpeaking(false);
         resolve();
       };
-
       utterance.onerror = () => {
         setIsSpeaking(false);
         resolve();
       };
 
-      speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
     });
-  };
-
-  const playAudioBase64 = async (base64Audio: string) => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const audioContext = audioContextRef.current;
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-
-      return new Promise<void>((resolve) => {
-        source.onended = () => {
-          console.log('🔊 Lecture audio terminée');
-          resolve();
-        };
-        source.start(0);
-      });
-
-    } catch (err) {
-      console.error('❌ Erreur lecture audio:', err);
-      throw err;
-    }
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // SAUVEGARDE TOOLBOX
-  // ═══════════════════════════════════════════════════════════
-
-  const saveCorrectionsToToolBox = (corrections: Correction[]) => {
-    if (corrections.length === 0) return;
-
-    console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
-
-    // ✅ Traduction des catégories en français
-    const categoryLabels: Record<string, string> = {
-      'grammar': 'Grammaire',
-      'conjugation': 'Conjugaison',
-      'vocabulary': 'Vocabulaire',
-      'pronunciation': 'Prononciation'
-    };
-
-    corrections.forEach((correction) => {
-      let category: 'grammar' | 'conjugation' | 'vocabulary' | 'pronunciation' = 'grammar';
-      
-      const type = correction.errorType?.toLowerCase();
-      if (type === 'conjugation') category = 'conjugation';
-      else if (type === 'vocabulary') category = 'vocabulary';
-      else if (type === 'pronunciation') category = 'pronunciation';
-      else category = 'grammar';
-      
-      addItem({
-        category,
-        title: `${categoryLabels[category]} - ${correction.explanation.substring(0, 30)}`,
-        description: correction.explanation,
-        example: `❌ "${correction.originalSentence}"\n✅ "${correction.correctedSentence}"`,
-        errorContext: `Semaine ${weekNumber} - Mode Oral`,
-      });
-    });
-
-    window.dispatchEvent(new Event('toolboxUpdated'));
-    setShowToolboxNotification(true);
-    setTimeout(() => setShowToolboxNotification(false), 3000);
   };
 
   // ═══════════════════════════════════════════════════════════
   // DÉMARRAGE SESSION
   // ═══════════════════════════════════════════════════════════
 
-  const startSession = async (duration: number) => {
-    try {
-      setSelectedDuration(duration);
-      setTimeRemaining(duration * 60);
-      setShowDurationSelector(false);
-      setConnectionState(ConnectionState.CONNECTING);
-      setErrorMsg(null);
-      setAllCorrections([]);
-      conversationHistoryRef.current = [];
+  const startSession = async (minutes: number) => {
+    setSelectedDuration(minutes);
+    setTimeRemaining(minutes * 60);
+    setShowDurationSelector(false);
+    setConnectionState(ConnectionState.CONNECTING);
 
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // ✅ Détecter si mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      isMobileRef.current = isMobile;
-      console.log(`📱 Device détecté : ${isMobile ? 'MOBILE' : 'DESKTOP'}`);
-
-      console.log('✅ Session démarrée');
-      setConnectionState(ConnectionState.CONNECTED);
-
-      const greeting = `Bonjour ! Aujourd'hui, semaine ${weekNumber}. Commençons !`;
-      await speakWithChirp3HD(greeting);
-
-      // ✅ DESKTOP ONLY : Démarrer écoute automatique
-      if (!isMobile) {
-        setTimeout(() => {
-          console.log('✅ Première écoute (DESKTOP)');
-          startListening();
-        }, 1500);
-      } else {
-        console.log('📱 MOBILE : Mode push-to-talk activé. Appuyez sur le bouton pour parler.');
-      }
-
-    } catch (err: any) {
-      console.error('❌ Erreur démarrage:', err);
-      setErrorMsg('Impossible d\'accéder au microphone');
-      setConnectionState(ConnectionState.ERROR);
-    }
+    // Message de bienvenue
+    const welcomeMessage = `Bonjour ! Je suis François, votre tuteur de français. ${week.welcomeMessage}. Nous avons ${minutes} minutes ensemble. À vous !`;
+    
+    await speakText(welcomeMessage);
+    
+    setConnectionState(ConnectionState.CONNECTED);
+    
+    // Démarrer l'écoute
+    setTimeout(() => {
+      startListening();
+    }, 500);
   };
 
   // ═══════════════════════════════════════════════════════════
-  // CLEANUP
+  // FIN SESSION
   // ═══════════════════════════════════════════════════════════
-
-  const cleanup = () => {
-    console.log('🧹 Cleanup : arrêt complet de la session');
-    
-    // 1. Stopper reconnaissance vocale
-    if (recognitionRef.current) {
-      try { 
-        recognitionRef.current.stop(); 
-        console.log('✅ Reconnaissance vocale stoppée');
-      } catch (e) {
-        console.log('⚠️ Reconnaissance déjà arrêtée');
-      }
-      recognitionRef.current = null;
-    }
-
-    // 2. Stopper tous les timeouts
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-      console.log('✅ Silence timeout cleared');
-    }
-
-    // 3. Stopper audio context
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-      console.log('✅ Audio context fermé');
-    }
-
-    // 4. Stopper synthèse vocale
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      console.log('✅ Synthèse vocale annulée');
-    }
-    
-    // 5. ✅ FIX : Stopper Gemini Chat
-    if (geminiChatRef.current) {
-      geminiChatRef.current = null;
-      console.log('✅ Gemini Chat supprimé');
-    }
-    
-    // 6. Réinitialiser tous les états refs
-    isListeningRef.current = false;
-    conversationHistoryRef.current = [];
-    lastTranscriptRef.current = '';
-    noSpeechCountRef.current = 0;
-    console.log('✅ États refs réinitialisés');
-
-    // 7. Stopper timer
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-      console.log('✅ Timer stoppé');
-    }
-    
-    // 8. ✅ FIX : Forcer arrêt états React
-    setConnectionState(ConnectionState.DISCONNECTED);
-    setIsSpeaking(false);
-    console.log('✅ États React réinitialisés');
-  };
 
   const handleEndCall = () => {
-    cleanup();
+    stopListening();
+    window.speechSynthesis.cancel();
+    
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    
+    setConnectionState(ConnectionState.DISCONNECTED);
     onClose();
   };
 
   const handleReportDoubt = () => {
-    const elapsedTime = selectedDuration ? (selectedDuration * 60 - timeRemaining) : 0;
-    
-    let correctionsText = '=== CORRECTIONS ===\n\n';
-    if (allCorrections.length === 0) {
-      correctionsText += '(Aucune)\n\n';
-    } else {
-      allCorrections.forEach((c, i) => {
-        correctionsText += `[${i + 1}] ${c.errorType}\n`;
-        correctionsText += `   ❌ ${c.originalSentence}\n`;
-        correctionsText += `   ✅ ${c.correctedSentence}\n`;
-        correctionsText += `   💡 ${c.explanation}\n\n`;
-      });
-    }
-    
-    const subject = encodeURIComponent('🚨 Doute - Mode ORAL');
-    const body = encodeURIComponent(`Bonjour Marion,
-
-Semaine : ${week.title}
-Durée : ${formatTime(elapsedTime)}
-
-${correctionsText}
-
-Commentaire :
-
-Cordialement`);
-
-    window.location.href = `mailto:marionviz@hotmail.com?subject=${subject}&body=${body}`;
+    const lastMessages = conversationHistoryRef.current.slice(-3).join('\n');
+    addItem({
+      weekNumber,
+      content: lastMessages,
+      type: 'doubt'
+    });
+    setShowToolboxNotification(true);
+    setTimeout(() => setShowToolboxNotification(false), 3000);
   };
 
-  const formatTime = (seconds: number) => {
+  const cleanup = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    window.speechSynthesis.cancel();
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // ═══════════════════════════════════════════════════════════
-  // RENDU UI
+  // RENDU
   // ═══════════════════════════════════════════════════════════
 
   if (showDurationSelector) {
@@ -794,60 +513,59 @@ Cordialement`);
       )}
       
       <header className="p-4 border-b">
-  {/* Mobile : 2 lignes */}
-  <div className="flex flex-col gap-3 md:hidden">
-    {/* Ligne 1 : Logo + Titre */}
-    <div className="flex items-center gap-3">
-      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
-      <h1 className="text-lg font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-    </div>
-    
-    {/* Ligne 2 : Boutons */}
-    <div className="flex items-center gap-2 justify-between">
-      <div className="px-3 py-1.5 bg-gray-800 rounded-lg">
-        <div className="text-xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-      </div>
-      
-      <button 
-        onClick={handleReportDoubt} 
-        className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
-      >
-        ⚠️ un doute ?
-      </button>
-      <button 
-        onClick={handleEndCall} 
-        className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm"
-      >
-        ✕ Terminer
-      </button>
-    </div>
-  </div>
+        {/* Mobile : 2 lignes */}
+        <div className="flex flex-col gap-3 md:hidden">
+          {/* Ligne 1 : Logo + Titre */}
+          <div className="flex items-center gap-3">
+            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+            <h1 className="text-lg font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+          </div>
+          
+          {/* Ligne 2 : Boutons */}
+          <div className="flex items-center gap-2 justify-between">
+            <div className="px-3 py-1.5 bg-gray-800 rounded-lg">
+              <div className="text-xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+            </div>
+            
+            <button 
+              onClick={handleReportDoubt} 
+              className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
+            >
+              ⚠️ un doute ?
+            </button>
+            <button 
+              onClick={handleEndCall} 
+              className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm"
+            >
+              ✕ Terminer
+            </button>
+          </div>
+        </div>
 
-  {/* Desktop : 1 ligne (comme avant) */}
-  <div className="hidden md:flex justify-between items-center">
-    <div className="flex items-center gap-3">
-      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
-      <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <div className="px-4 py-2 bg-gray-800 rounded-lg">
-        <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-      </div>
-      
-      <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
-      <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
-    </div>
-  </div>
+        {/* Desktop : 1 ligne */}
+        <div className="hidden md:flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+            <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="px-4 py-2 bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+            </div>
+            
+            <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
+            <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
-              {/* 🎯 MODE HYBRIDE : Desktop auto / Mobile push-to-talk */}
               
-              {/* Desktop : Cercle automatique (comme avant) */}
+              {/* Desktop : Cercle automatique */}
               <div className="hidden md:block">
                 <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 shadow-2xl transition-all duration-300 ${
                   isSpeaking ? 'bg-[#2d5016] animate-pulse' : 'bg-[#90c695]'
@@ -870,20 +588,20 @@ Cordialement`);
               <div className="md:hidden">
                 <button
                   onClick={startListening}
-                  disabled={isSpeaking || isListeningRef.current}
+                  disabled={isSpeaking || isListening}
                   className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-4 shadow-2xl transition-all duration-300 active:scale-95 ${
                     isSpeaking 
                       ? 'bg-[#2d5016] animate-pulse cursor-not-allowed' 
-                      : isListeningRef.current
-                      ? 'bg-red-500 animate-pulse'
+                      : isListening
+                      ? 'bg-red-500 animate-pulse cursor-not-allowed'
                       : 'bg-[#90c695] active:bg-[#7ab67f]'
                   }`}
                 >
                   <div className="text-6xl text-white mb-2">
-                    {isSpeaking ? '🔊' : isListeningRef.current ? '🎤' : '🎤'}
+                    {isSpeaking ? '🔊' : isListening ? '🎤' : '🎤'}
                   </div>
                   <div className="text-xs text-white font-semibold">
-                    {isSpeaking ? 'François...' : isListeningRef.current ? 'ÉCOUTE' : 'APPUYEZ'}
+                    {isSpeaking ? 'François...' : isListening ? 'ÉCOUTE' : 'APPUYEZ'}
                   </div>
                 </button>
 
@@ -894,13 +612,13 @@ Cordialement`);
                 <div className="text-base font-semibold mb-2 px-4">
                   {isSpeaking 
                     ? 'François parle...' 
-                    : isListeningRef.current 
+                    : isListening 
                     ? '🎤 Parlez maintenant !' 
                     : 'Appuyez pour parler'}
                 </div>
                 
                 <div className="text-xs text-gray-400 max-w-xs mx-auto">
-                  {!isSpeaking && !isListeningRef.current && 'Maintenez appuyé et parlez clairement'}
+                  {!isSpeaking && !isListening && 'Appuyez sur le bouton et parlez clairement'}
                 </div>
               </div>
             </div>
