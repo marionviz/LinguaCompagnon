@@ -3,6 +3,7 @@
 // ⚡ VERSION RAPIDE - LATENCE OPTIMISÉE (gain 40%)
 // ✅ Un seul rond avec micro "À vous de parler"
 // ✅ Texte titres réduit et sans coupure
+// 🔧 FIX PUSH-TO-TALK MOBILE
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -41,7 +42,7 @@ const LiveTutorOral: React.FC<LiveTutorOralProps> = ({ weekNumber, onClose }) =>
   const conversationHistoryRef = useRef<string[]>([]);
   const noSpeechCountRef = useRef<number>(0);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isMobileRef = useRef<boolean>(false); // ✅ FIX MOBILE
+  const isMobileRef = useRef<boolean>(false);
 
   // ═══════════════════════════════════════════════════════════
   // TIMER
@@ -152,8 +153,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
   };
 
   // ═══════════════════════════════════════════════════════════
-  // ═══════════════════════════════════════════════════════════
-  // 📱 PUSH-TO-TALK MOBILE
+  // 📱 PUSH-TO-TALK MOBILE (CORRIGÉ)
   // ═══════════════════════════════════════════════════════════
 
   const handleMobileTalk = useCallback(() => {
@@ -173,8 +173,8 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'fr-FR';
-      recognition.continuous = false; // ✅ Mode phrase unique sur mobile
-      recognition.interimResults = false;
+      recognition.continuous = false; // ✅ UNE SEULE PHRASE
+      recognition.interimResults = false; // ✅ PAS D'INTERIM
       recognition.maxAlternatives = 1;
 
       console.log('📱 Config mobile : continuous=false, interimResults=false');
@@ -194,6 +194,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           sendToGemini(transcript);
         } else {
           console.log('⚠️ MOBILE : Transcription trop courte ou identique');
+          isListeningRef.current = false; // ✅ RÉINITIALISER
         }
       };
 
@@ -204,16 +205,16 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
         if (event.error === 'not-allowed') {
           setErrorMsg('Microphone refusé. Autorisez le micro dans les paramètres.');
         } else if (event.error === 'no-speech') {
-          setErrorMsg('Aucun son détecté. Parlez plus fort !');
+          console.log('⚠️ Aucun son détecté');
         }
       };
 
       recognition.onend = () => {
         console.log('🎤 MOBILE : Écoute terminée');
         isListeningRef.current = false;
+        // ✅ PAS DE RELANCE AUTOMATIQUE SUR MOBILE
       };
 
-      recognitionRef.current = recognition;
       recognition.start();
 
     } catch (err: any) {
@@ -225,9 +226,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
   // ═══════════════════════════════════════════════════════════
   // RECONNAISSANCE VOCALE - CONTINUOUS MODE (DESKTOP)
-  // ═══════════════════════════════════════════════════════════
-  
-  // RECONNAISSANCE VOCALE - CONTINUOUS MODE
   // ═══════════════════════════════════════════════════════════
 
   const startListening = useCallback(() => {
@@ -244,20 +242,17 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'fr-FR';
-      // ✅ FIX MOBILE : continuous false sur mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      isMobileRef.current = isMobile; // ✅ Stocker dans ref pour onend
-      recognition.continuous = !isMobile; // false sur mobile, true sur desktop
+      recognition.continuous = true; // ✅ DESKTOP : MODE CONTINU
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       
-      console.log(`📱 Mode: ${isMobile ? 'MOBILE' : 'DESKTOP'}, continuous: ${recognition.continuous}`);
+      console.log('💻 DESKTOP : continuous=true, interimResults=true');
 
       let finalTranscript = '';
       let interimTranscript = '';
 
       recognition.onstart = () => {
-        console.log('🎤 Écoute démarrée (mode continu)');
+        console.log('🎤 DESKTOP : Écoute démarrée');
         isListeningRef.current = true;
       };
 
@@ -280,7 +275,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
         if (finalTranscript.trim().length > 0) {
           silenceTimeoutRef.current = setTimeout(async () => {
             const userText = finalTranscript.trim();
-            console.log('📝 Transcription finale:', userText);
+            console.log('📝 DESKTOP : Transcription finale:', userText);
             
             finalTranscript = '';
             noSpeechCountRef.current = 0;
@@ -300,12 +295,12 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
             conversationHistoryRef.current.push(`Apprenant: ${userText}`);
             await sendToGemini(userText);
-          },2000); // ⚡ Fin phrase : 2s
+          }, 2000); // ⚡ 2s silence = fin de phrase
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.error('❌ Erreur reconnaissance:', event.error);
+        console.error('❌ DESKTOP : Erreur reconnaissance:', event.error);
         isListeningRef.current = false;
         
         if (event.error === 'no-speech' || event.error === 'audio-capture') {
@@ -324,23 +319,9 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       };
 
       recognition.onend = () => {
-        console.log('🎤 Écoute terminée');
+        console.log('🎤 DESKTOP : Écoute terminée');
         isListeningRef.current = false;
-        
-        // ✅ FIX MOBILE : Relancer automatiquement sur mobile
-        if (isMobileRef.current && !isSpeaking && connectionState === ConnectionState.CONNECTED) {
-          console.log('📱 Mobile : Relance automatique dans 300ms');
-          setTimeout(() => {
-            if (!isSpeaking && recognitionRef.current) {
-              try {
-                recognitionRef.current.start();
-                console.log('✅ Reconnaissance relancée (mobile)');
-              } catch (e) {
-                console.log('⚠️ Erreur relance:', e);
-              }
-            }
-          }, 300); // Petit délai pour éviter erreurs
-        }
+        // ✅ PAS DE RELANCE ICI - Géré par sendToGemini
       };
 
       recognitionRef.current = recognition;
@@ -420,30 +401,27 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       // ✅ DESKTOP ONLY : Relancer écoute automatique
       if (!isMobileRef.current) {
-        console.log('⏳ ⚡ Attente 1s avant relance (DESKTOP)...');
+        console.log('⏳ DESKTOP : Attente avant relance...');
         setTimeout(() => {
-          console.log(`🔍 État avant relance - Speaking: ${isSpeaking}`);
-          
-          if (isSpeaking) {
-            console.log('⚠️ François parle encore, attente 1s de plus...');
-            setTimeout(() => {
-              console.log('✅ Relance écoute (après attente supplémentaire)');
-              startListening();
-            }, 1500); // ⚡ Si parle : 1.5s
-          } else {
-            console.log('✅ Relance écoute');
+          if (!isSpeaking) {
+            console.log('✅ DESKTOP : Relance écoute');
             startListening();
+          } else {
+            console.log('⚠️ François parle encore, attente supplémentaire...');
+            setTimeout(() => startListening(), 1500);
           }
-        }, 1500); // ⚡ Relance : 1.5s
+        }, 1500);
       } else {
-        console.log('📱 MOBILE : Attendez que François finisse puis appuyez pour parler');
+        console.log('📱 MOBILE : Attendez fin de François puis APPUYEZ pour parler');
       }
 
     } catch (err: any) {
       console.error('❌ Erreur Gemini:', err);
       setErrorMsg('Erreur traitement IA');
       
-      setTimeout(() => startListening(), 1500); // ⚡ Erreur : 1.5s
+      if (!isMobileRef.current) {
+        setTimeout(() => startListening(), 1500);
+      }
     }
   };
 
@@ -558,7 +536,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
     console.log('💾 Sauvegarde dans ToolBox:', corrections.length);
 
-    // ✅ Traduction des catégories en français
     const categoryLabels: Record<string, string> = {
       'grammar': 'Grammaire',
       'conjugation': 'Conjugaison',
@@ -605,7 +582,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
 
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // ✅ Détecter si mobile
+      // ✅ Détecter device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       isMobileRef.current = isMobile;
       console.log(`📱 Device détecté : ${isMobile ? 'MOBILE' : 'DESKTOP'}`);
@@ -619,7 +596,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       // ✅ DESKTOP ONLY : Démarrer écoute automatique
       if (!isMobile) {
         setTimeout(() => {
-          console.log('✅ Première écoute (DESKTOP)');
+          console.log('✅ DESKTOP : Première écoute');
           startListening();
         }, 1500);
       } else {
@@ -640,7 +617,6 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
   const cleanup = () => {
     console.log('🧹 Cleanup : arrêt complet de la session');
     
-    // 1. Stopper reconnaissance vocale
     if (recognitionRef.current) {
       try { 
         recognitionRef.current.stop(); 
@@ -651,50 +627,36 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       recognitionRef.current = null;
     }
 
-    // 2. Stopper tous les timeouts
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
-      console.log('✅ Silence timeout cleared');
     }
 
-    // 3. Stopper audio context
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
       audioContextRef.current = null;
-      console.log('✅ Audio context fermé');
     }
 
-    // 4. Stopper synthèse vocale
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
-      console.log('✅ Synthèse vocale annulée');
     }
     
-    // 5. ✅ FIX : Stopper Gemini Chat
     if (geminiChatRef.current) {
       geminiChatRef.current = null;
-      console.log('✅ Gemini Chat supprimé');
     }
     
-    // 6. Réinitialiser tous les états refs
     isListeningRef.current = false;
     conversationHistoryRef.current = [];
     lastTranscriptRef.current = '';
     noSpeechCountRef.current = 0;
-    console.log('✅ États refs réinitialisés');
 
-    // 7. Stopper timer
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
-      console.log('✅ Timer stoppé');
     }
     
-    // 8. ✅ FIX : Forcer arrêt états React
     setConnectionState(ConnectionState.DISCONNECTED);
     setIsSpeaking(false);
-    console.log('✅ États React réinitialisés');
   };
 
   const handleEndCall = () => {
@@ -785,60 +747,57 @@ Cordialement`);
       )}
       
       <header className="p-4 border-b">
-  {/* Mobile : 2 lignes */}
-  <div className="flex flex-col gap-3 md:hidden">
-    {/* Ligne 1 : Logo + Titre */}
-    <div className="flex items-center gap-3">
-      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
-      <h1 className="text-lg font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-    </div>
-    
-    {/* Ligne 2 : Boutons */}
-    <div className="flex items-center gap-2 justify-between">
-      <div className="px-3 py-1.5 bg-gray-800 rounded-lg">
-        <div className="text-xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-      </div>
-      
-      <button 
-        onClick={handleReportDoubt} 
-        className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
-      >
-        ⚠️ un doute ?
-      </button>
-      <button 
-        onClick={handleEndCall} 
-        className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm"
-      >
-        ✕ Terminer
-      </button>
-    </div>
-  </div>
+        {/* Mobile : 2 lignes */}
+        <div className="flex flex-col gap-3 md:hidden">
+          <div className="flex items-center gap-3">
+            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+            <h1 className="text-lg font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+          </div>
+          
+          <div className="flex items-center gap-2 justify-between">
+            <div className="px-3 py-1.5 bg-gray-800 rounded-lg">
+              <div className="text-xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+            </div>
+            
+            <button 
+              onClick={handleReportDoubt} 
+              className="px-2 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg whitespace-nowrap"
+            >
+              ⚠️ un doute ?
+            </button>
+            <button 
+              onClick={handleEndCall} 
+              className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm"
+            >
+              ✕ Terminer
+            </button>
+          </div>
+        </div>
 
-  {/* Desktop : 1 ligne (comme avant) */}
-  <div className="hidden md:flex justify-between items-center">
-    <div className="flex items-center gap-3">
-      <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
-      <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <div className="px-4 py-2 bg-gray-800 rounded-lg">
-        <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
-      </div>
-      
-      <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
-      <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
-    </div>
-  </div>
+        {/* Desktop : 1 ligne */}
+        <div className="hidden md:flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <img src="/francois.jpg" alt="François" className="w-10 h-10 rounded-full" />
+            <h1 className="text-xl font-bold">Lingua<span className="text-brand-green">Compagnon</span></h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="px-4 py-2 bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-brand-green">{formatTime(timeRemaining)}</div>
+            </div>
+            
+            <button onClick={handleReportDoubt} className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded-lg">⚠️ Un doute ?</button>
+            <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg">✕ Terminer</button>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           {connectionState === ConnectionState.CONNECTED && (
             <div className="text-center">
-              {/* 🎯 MODE HYBRIDE : Desktop auto / Mobile push-to-talk */}
               
-              {/* Desktop : Cercle automatique (comme avant) */}
+              {/* Desktop : Cercle automatique */}
               <div className="hidden md:block">
                 <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 shadow-2xl transition-all duration-300 ${
                   isSpeaking ? 'bg-[#2d5016] animate-pulse' : 'bg-[#90c695]'
@@ -860,13 +819,13 @@ Cordialement`);
               {/* Mobile : Bouton Push-to-Talk */}
               <div className="md:hidden">
                 <button
-                  onClick={isMobileRef.current ? handleMobileTalk : undefined}
+                  onClick={handleMobileTalk}
                   disabled={isSpeaking || isListeningRef.current}
                   className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-4 shadow-2xl transition-all duration-300 active:scale-95 ${
                     isSpeaking 
                       ? 'bg-[#2d5016] animate-pulse cursor-not-allowed' 
                       : isListeningRef.current
-                      ? 'bg-red-500 animate-pulse'
+                      ? 'bg-red-500 animate-pulse cursor-not-allowed'
                       : 'bg-[#90c695] active:bg-[#7ab67f]'
                   }`}
                 >
@@ -891,7 +850,7 @@ Cordialement`);
                 </div>
                 
                 <div className="text-xs text-gray-400 max-w-xs mx-auto">
-                  {!isSpeaking && !isListeningRef.current && 'Maintenez appuyé et parlez clairement'}
+                  {!isSpeaking && !isListeningRef.current && 'Appuyez et parlez clairement'}
                 </div>
               </div>
             </div>
@@ -941,5 +900,3 @@ Cordialement`);
 };
 
 export default LiveTutorOral;
-
-
