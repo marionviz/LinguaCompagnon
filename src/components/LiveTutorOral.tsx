@@ -434,6 +434,13 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       setIsSpeaking(true);
       console.log('🔊 Synthèse Chirp 3 HD...');
 
+      const cleanedText = text
+      .replace(/✏️|💡|✨|📝|🎯|⚠️|👍|😊|🎉/g, '') // Supprimer émojis
+      .replace(/\*\*/g, '') // Supprimer markdown gras
+      .replace(/`([^`]+)`/g, '$1') // Remplacer `code` par code
+      .replace(/'/g, "'") // Remplacer apostrophe typographique par normale
+      .trim();
+
       const apiKey = import.meta.env.VITE_API_KEY;
       
       const response = await fetch(
@@ -442,7 +449,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            input: { text },
+            input: { text: cleanedText },
             voice: {
               languageCode: 'fr-FR',
               name: 'fr-FR-Chirp3-HD-Charon'
