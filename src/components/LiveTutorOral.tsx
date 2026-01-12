@@ -864,11 +864,11 @@ Cordialement`);
                     ? 'François parle...' 
                     : isListeningRef.current 
                     ? '🎤 Parlez maintenant !' 
-                    : 'Appuyez pour parler'}
+                    : 'Appuyez une fois pour parler'}
                 </div>
                 
                 <div className="text-xs text-gray-400 max-w-xs mx-auto">
-                  {!isSpeaking && !isListeningRef.current && 'Appuyez et parlez clairement'}
+                  {!isSpeaking && !isListeningRef.current && ''}
                 </div>
               </div>
             </div>
