@@ -435,11 +435,11 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       console.log('🔊 Synthèse Chirp 3 HD...');
 
       const cleanedText = text
-      .replace(/✏️|💡|✨|📝|🎯|⚠️|👍|😊|🎉/g, '') // Supprimer émojis
-      .replace(/\*\*/g, '') // Supprimer markdown gras
-      .replace(/`([^`]+)`/g, '$1') // Remplacer `code` par code
-      .replace(/'/g, "'") // Remplacer apostrophe typographique par normale
-      .trim();
+        .replace(/✏️|💡|✨|📝|🎯|⚠️|👍|😊|🎉/g, '') // Supprimer émojis
+        .replace(/\*\*/g, '') // Supprimer markdown gras
+        .replace(/`([^`]+)`/g, '$1') // Remplacer `code` par code
+        .replace(/['´`]/g, "'") // ✅ MODIFIÉ : remplacer TOUTES apostrophes par standard
+        .trim();
 
       const apiKey = import.meta.env.VITE_API_KEY;
       
