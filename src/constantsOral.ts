@@ -134,7 +134,7 @@ SEMAINE 2 : PREMIÈRES INTERACTIONS
 Thèmes : Entamer et terminer une conversation, communiquer par téléphone.
 
 VOCABULAIRE CIBLÉ :
-- Expressions de contact : "Ça fait longtemps !", "Excusez-moi...", "On reste en contact !"
+- Expressions de contact : "Ça fait longtemps qu'on ne s'est pas vus !", "quoi de neuf?", "je suis pressée", "je dois filer", "Excusez-moi...", "On reste en contact !"
 - Téléphone : batterie, répondeur, allumer/éteindre, décrocher/raccrocher, mode avion
 - Codes : "Qui est à l'appareil ?", "Ne quittez pas", "C'est de la part de qui ?"
 
