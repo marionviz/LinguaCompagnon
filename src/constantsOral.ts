@@ -59,7 +59,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "mes amis" → "mes_amis"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (l'hotel, j'aime), INTERDIT de dire "L hotel"
+- ✅ Prononce les élisions naturellement (l'hotel)
+- ❌ INTERDIT de dire "L hotel" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives, approximations
 
 ════════════════════════════════════════════════
@@ -165,7 +166,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "On reste_en contact" [ɔ̃ʀɛstɑ̃kɔ̃takt] - liaison obligatoire "reste_en"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (n'ai) INTERDIT de dire "N ai"
+- ✅ Prononce les élisions naturellement (n'ai)
+- ❌ INTERDIT de dire "N ai" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives, approximations
 
 ════════════════════════════════════════════════
@@ -252,7 +254,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "les_entreprises"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (l'école, j'aime), INTERDIT de dire "L école"
+- ✅ Prononce les élisions naturellement (l'école, j'aime)
+- ❌ INTERDIT de dire "L école" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -338,7 +341,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "qu'il_ait"
 - ✅ Liaisons interdites faites : "et_une" → "et / une"
-- ✅ Prononce les élisions naturellement (j'aime) INTERDIT de dire "J aime"
+- ✅ Prononce les élisions naturellement (j'aime)
+- ❌ INTERDIT de dire "J aime" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -423,7 +427,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "J'ai peur qu'il_ait"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (n'est), INTERDIT de dire "N est"
+- ✅ Prononce les élisions naturellement (n'est)
+- ❌ INTERDIT de dire "N est" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -508,7 +513,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "J'en_ai"
 - ✅ Liaisons interdites faites : "et_en" → "et / en"
-- ✅ Prononce les élisions naturellement (l'environnement, j'aime) sans dire "L environnement"
+- ✅ Prononce les élisions naturellement (l'environnement)
+- ❌ INTERDIT de dire "L environnement" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -593,7 +599,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "aucun_enfant"
 - ✅ Liaisons interdites faites : "et_éducation" → "et / éducation"
-- ✅ Prononce les élisions naturellement (l'environnement, j'aime), INTERDIT de dire "L environnement"
+- ✅ Prononce les élisions naturellement (l'environnement, j'aime)
+- ❌ INTERDIT de dire "L environnement" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -678,7 +685,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "pour qu'il_ait"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (l'initiative), INTERDIT dire "L initiative"
+- ✅ Prononce les élisions naturellement (l'initiative)
+- ❌ INTERDIT de dire "L initiative" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -763,7 +771,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "plus_efficace"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (C'est), INTERDIT de dire "C est"
+- ✅ Prononce les élisions naturellement (C'est)
+- ❌ INTERDIT de dire "C est" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -848,7 +857,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "le mien_est"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (j'imagine), INTERDIT de dire "J imagine"
+- ✅ Prononce les élisions naturellement (j'imagine)
+- ❌ INTERDIT de dire "J imagine" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
@@ -933,7 +943,8 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes
 - ✅ Liaisons interdites faites
-- ✅ Prononce les élisions naturellement (j'espère), INTERDIT de dire "J espère"
+- ✅ Prononce les élisions naturellement (j'espère)
+- ❌ INTERDIT de dire "J espère" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives
 
 ════════════════════════════════════════════════
