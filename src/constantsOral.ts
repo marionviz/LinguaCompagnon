@@ -333,7 +333,7 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 
 **Priorité 3 : VOCABULAIRE**
 - Expressions incorrectes
-- Exemple : "C'est bon que" → "C'est bien que"
+- Exemple : "Quoi neuf ?" → "Quoi de neuf ?"
 
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "qu'il_ait"
@@ -588,7 +588,7 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 
 **Priorité 3 : VOCABULAIRE**
 - Prépositions avec verbes
-- Exemple : "bénéficier à" → "bénéficier de"
+- Exemple : "pour objectif à" → "pour objectif de"
 
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "aucun_enfant"

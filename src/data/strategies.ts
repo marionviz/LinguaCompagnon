@@ -279,8 +279,15 @@ export const LEARNING_STRATEGIES: LearningStrategies[] = [
     weekNumber: 7,
     errorType: 'grammar',
     errorPattern: 'prépositions verbes',
-    strategy: 'Verbes + préposition fixe : bénéficier DE, aider À, encourager À, priver DE. À mémoriser.',
+    strategy: 'Verbes + préposition fixe : bénéficier DE, aider À, encourager À, priver DE.',
     example: 'Il bénéficie DE droits. J\'aide À organiser.'
+  },
+  {
+    weekNumber: 7,
+    errorType: 'grammar',
+    errorPattern: 'structures verbes',
+    strategy: 'Ce projet s\'intitule.../il a pour objectif de + verbe infinitif /Ce projet concerne.../Les bénéficiaires sont ',
+    example: 'Ce projet a pour objectif de favoriser l\'apprentissage scolaire des enfants.'
   },
   {
     weekNumber: 7,

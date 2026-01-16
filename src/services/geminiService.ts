@@ -92,6 +92,7 @@ const getWeekContent = (week: number): string => {
 **Grammaire :**
 - La négation complexe : ne... ni... ni..., aucun(e)... ne...
 - Les prépositions avec les verbes : bénéficier de/à, aider à, offrir à, priver de.
+- Les structures verbales : cette initiative a pour objectif de, vise à, permet à quelqu'un de, la durée de ce projet est de...
 **Objectif de la conversation :** Discutez des droits de l'enfant qui semblent les plus importants à l'apprenant. Proposez-lui d'imaginer et de décrire un projet éducatif en utilisant le vocabulaire approprié et des phrases négatives pour dire ce que le projet n'est pas ou ce qu'il combat.
 `;
     case 8:
