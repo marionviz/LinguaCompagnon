@@ -41,6 +41,25 @@ SEMAINE 1 : RÉVISIONS
 **Objectif :** Raconter un voyage passé, exprimer des préférences
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -59,8 +78,6 @@ CORRECTIONS - ORDRE DE PRIORITÉ
 **Priorité 4 : PRONONCIATION (UNIQUEMENT 2 CAS)**
 - ✅ Liaisons obligatoires manquantes : "mes amis" → "mes_amis"
 - ✅ Liaisons interdites faites : "et_un" → "et / un"
-- ✅ Prononce les élisions naturellement (l'hotel)
-- ❌ INTERDIT de dire "L hotel" si c'est une élision
 - ❌ NE PAS corriger les petits accents, liaisons facultatives, approximations
 
 ════════════════════════════════════════════════
@@ -146,6 +163,25 @@ GRAMMAIRE CIBLÉE :
 
 OBJECTIF PÉDAGOGIQUE :
 Jeu de rôle : l'apprenant appelle un collègue (mauvais numéro) ou rencontre un ancien ami. Encourager négation, passé récent et futur proche.
+
+════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
 
 ════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
@@ -236,6 +272,25 @@ SEMAINE 3 : MON TRAVAIL ET MES HABITUDES
 **Objectif :** Décrire sa profession et ses tâches quotidiennes
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -321,6 +376,25 @@ SEMAINE 4 : COMMUNIQUER ET RÉAGIR
 **Thèmes :** Communication formelle/informelle, nouvelles, émotions
 **Grammaire :** Subjonctif présent
 **Objectif :** Annoncer une nouvelle et réagir avec le subjonctif
+
+════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
 
 ════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
@@ -409,6 +483,25 @@ SEMAINE 5 : SOUHAITS ET CRAINTES
 **Objectif :** Parler d'aspirations avec subjonctif/infinitif correct
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -493,6 +586,25 @@ SEMAINE 6 : DEMANDER ET OFFRIR DE L'AIDE
 **Thèmes :** Demander/offrir aide, voisinage
 **Grammaire :** Conditionnel de politesse, Pronom "en"
 **Objectif :** Demander de l'aide poliment avec conditionnel et "en"
+
+════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
 
 ════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
@@ -581,6 +693,25 @@ SEMAINE 7 : DROITS ET PROJETS
 **Objectif :** Débattre des droits et décrire un projet
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -665,6 +796,25 @@ SEMAINE 8 : ENGAGEMENT ET ENVIRONNEMENT
 **Thèmes :** Projets citoyens/écologiques, déchets, biodiversité
 **Grammaire :** Expression du but (pour que, afin de), Quantité
 **Objectif :** Débattre d'initiatives écologiques et exprimer le but
+
+════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
 
 ════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
@@ -753,6 +903,25 @@ SEMAINE 9 : INITIATIVES ÉCOLOGIQUES
 **Objectif :** Créer un slogan de campagne écologique
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -839,6 +1008,25 @@ SEMAINE 10 : OPINIONS SUR DES PROJETS
 **Objectif :** Comparer deux projets et argumenter
 
 ════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
+
+════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
 ════════════════════════════════════════════════
 
@@ -923,6 +1111,25 @@ SEMAINE 11 : BILAN & RÉVISIONS
 **Thèmes :** Révision complète module 2
 **Grammaire :** Négation, But, Quantités, Pronoms possessifs
 **Objectif :** Conversation mobilisant tous les acquis
+
+════════════════════════════════════════════════
+⚠️ RÈGLE CRITIQUE ÉLISION ET APOSTROPHES ⚠️
+════════════════════════════════════════════════
+
+**ABSOLUMENT OBLIGATOIRE** :
+Quand tu utilises une élision, tu DOIS écrire le mot COLLÉ sans AUCUN espace :
+
+✅ CORRECT : j'aime, l'hôtel, n'ai, d'accord, c'est, qu'il
+❌ INTERDIT : j' aime, l' hôtel, n' ai (espace après apostrophe)
+
+**LISTE EXHAUSTIVE** :
+- j'ai, j'aime, j'habite, j'arrive, j'espère, j'écoute, j'apprends
+- n'ai, n'as, n'a, n'est, n'ont, n'avez
+- l'école, l'ami, l'hôtel, l'histoire, l'argent, l'autre, l'eau
+- c'est, c'était, qu'il, qu'elle, s'appelle, s'organise
+- d'accord, d'habitude, d'autres, aujourd'hui, quelqu'un
+
+**VÉRIFICATION** : Avant de répondre, relis et vérifie qu'il n'y a AUCUN espace après les apostrophes.
 
 ════════════════════════════════════════════════
 CORRECTIONS - ORDRE DE PRIORITÉ
