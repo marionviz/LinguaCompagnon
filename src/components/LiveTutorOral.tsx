@@ -155,75 +155,101 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
   // ═══════════════════════════════════════════════════════════
   // 📱 PUSH-TO-TALK MOBILE (CORRIGÉ)
   // ═══════════════════════════════════════════════════════════
+const handleMobileTalk = useCallback(() => {
+  if (isSpeaking || isListeningRef.current) {
+    console.log('⏸️ Déjà en cours...');
+    return;
+  }
 
-  const handleMobileTalk = useCallback(() => {
-    if (isSpeaking || isListeningRef.current) {
-      console.log('⏸️ Déjà en cours...');
+  console.log('📱 MOBILE : Démarrage push-to-talk');
+
+  try {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setErrorMsg('Reconnaissance vocale non supportée');
       return;
     }
 
-    console.log('📱 MOBILE : Démarrage push-to-talk');
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'fr-FR';
+    recognition.continuous = false;
+    recognition.interimResults = true; // ✅ ACTIVÉ pour iOS
+    recognition.maxAlternatives = 1;
 
-    try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setErrorMsg('Reconnaissance vocale non supportée');
-        return;
+    console.log('📱 Config mobile : continuous=false, interimResults=true');
+
+    let finalTranscript = '';
+    let silenceTimer: NodeJS.Timeout | null = null;
+
+    recognition.onstart = () => {
+      console.log('🎤 MOBILE : Écoute démarrée');
+      isListeningRef.current = true;
+      finalTranscript = '';
+    };
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      
+      // ✅ PARSER TOUS LES RÉSULTATS
+      for (let i = 0; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
       }
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'fr-FR';
-      recognition.continuous = false; // ✅ UNE SEULE PHRASE
-      recognition.interimResults = false; // ✅ PAS D'INTERIM
-      recognition.maxAlternatives = 1;
+      // ✅ DÉTECTION FIN DE PAROLE : 750ms sans nouveau résultat
+      if (silenceTimer) clearTimeout(silenceTimer);
+      
+      silenceTimer = setTimeout(() => {
+        const fullText = (finalTranscript + interimTranscript).trim();
+        console.log('📝 MOBILE : Transcription finale:', fullText);
 
-      console.log('📱 Config mobile : continuous=false, interimResults=false');
-
-      recognition.onstart = () => {
-        console.log('🎤 MOBILE : Écoute démarrée');
-        isListeningRef.current = true;
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript.trim();
-        console.log('📝 MOBILE : Transcription:', transcript);
-
-        if (transcript.length >= 3 && transcript !== lastTranscriptRef.current) {
-          lastTranscriptRef.current = transcript;
-          conversationHistoryRef.current.push(`Apprenant: ${transcript}`);
-          sendToGemini(transcript);
+        if (fullText.length >= 3 && fullText !== lastTranscriptRef.current) {
+          lastTranscriptRef.current = fullText;
+          conversationHistoryRef.current.push(`Apprenant: ${fullText}`);
+          recognition.stop(); // ✅ STOP MANUEL
+          isListeningRef.current = false;
+          sendToGemini(fullText);
         } else {
-          console.log('⚠️ MOBILE : Transcription trop courte ou identique');
-          isListeningRef.current = false; // ✅ RÉINITIALISER
+          console.log('⚠️ MOBILE : Transcription trop courte');
+          recognition.stop();
+          isListeningRef.current = false;
         }
-      };
+      }, 750); // ✅ 750ms = optimal iOS/Android
+    };
 
-      recognition.onerror = (event: any) => {
-        console.error('❌ MOBILE : Erreur reconnaissance:', event.error);
-        isListeningRef.current = false;
-        
-        if (event.error === 'not-allowed') {
-          setErrorMsg('Microphone refusé. Autorisez le micro dans les paramètres.');
-        } else if (event.error === 'no-speech') {
-          console.log('⚠️ Aucun son détecté');
-        }
-      };
-
-      recognition.onend = () => {
-        console.log('🎤 MOBILE : Écoute terminée');
-        isListeningRef.current = false;
-        // ✅ PAS DE RELANCE AUTOMATIQUE SUR MOBILE
-      };
-
-      recognition.start();
-
-    } catch (err: any) {
-      console.error('❌ MOBILE : Erreur démarrage:', err);
-      setErrorMsg('Erreur micro mobile');
+    recognition.onerror = (event: any) => {
+      console.error('❌ MOBILE : Erreur reconnaissance:', event.error);
       isListeningRef.current = false;
-    }
-  }, [isSpeaking]);
+      if (silenceTimer) clearTimeout(silenceTimer);
+      
+      if (event.error === 'not-allowed') {
+        setErrorMsg('Microphone refusé. Autorisez le micro dans les paramètres.');
+      } else if (event.error === 'no-speech') {
+        console.log('⚠️ Aucun son détecté - Réessayez');
+      } else if (event.error === 'aborted') {
+        console.log('⚠️ Reconnaissance interrompue');
+      }
+    };
 
+    recognition.onend = () => {
+      console.log('🎤 MOBILE : Écoute terminée');
+      isListeningRef.current = false;
+      if (silenceTimer) clearTimeout(silenceTimer);
+    };
+
+    recognition.start();
+
+  } catch (err: any) {
+    console.error('❌ MOBILE : Erreur démarrage:', err);
+    setErrorMsg('Erreur micro mobile');
+    isListeningRef.current = false;
+  }
+}, [isSpeaking]);
+ 
   // ═══════════════════════════════════════════════════════════
   // RECONNAISSANCE VOCALE - CONTINUOUS MODE (DESKTOP)
   // ═══════════════════════════════════════════════════════════
