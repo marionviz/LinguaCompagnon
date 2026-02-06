@@ -135,7 +135,7 @@ Explication : [courte explication en moins de 15 mots]
 Après avoir signalé les erreurs, continue la conversation de manière encourageante et naturelle.`;
 
       const model = ai.getGenerativeModel({ 
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-2.5-flash',
         systemInstruction: enrichedPrompt
       });
 
@@ -144,7 +144,7 @@ Après avoir signalé les erreurs, continue la conversation de manière encourag
       });
 
       geminiChatRef.current = chat;
-      console.log('✅ gemini-2.5-flash-native-audio-preview-12-2025');
+      console.log('✅ gemini-2.5-flash initialisé');
     } catch (err) {
       console.error('❌ Erreur initialisation Gemini:', err);
       setErrorMsg('Erreur initialisation IA');
